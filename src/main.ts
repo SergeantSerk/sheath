@@ -17,8 +17,32 @@ let localStream: MediaStream | null = null;
 let currentVideoTrack: MediaStreamTrack | null = null;
 let currentAudioTrack: MediaStreamTrack | null = null;
 
+function isMediaSupported(): boolean {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn("Media devices API not available. This usually happens in insecure contexts (HTTP).");
+        return false;
+    }
+    return true;
+}
+
+async function updateCameraList() {
+    if (!isMediaSupported()) return;
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cameras = devices.filter((d) => d.kind === "videoinput");
+        ui.setCameras(cameras);
+    } catch (err) {
+        console.error("Failed to list cameras", err);
+    }
+}
+
 async function acquireAudio() {
     if (currentAudioTrack) return;
+    if (!isMediaSupported()) {
+        ui.addMessage("Audio access failed: Peer-to-peer media requires a secure context (HTTPS or localhost).", "system");
+        return;
+    }
+
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const track = stream.getAudioTracks()[0];
@@ -39,12 +63,17 @@ async function acquireAudio() {
         }
     } catch (err) {
         console.error("Failed to acquire audio", err);
-        ui.addMessage("Mic access denied.", "system");
+        ui.addMessage("Mic access denied or unavailable.", "system");
     }
 }
 
 async function acquireVideo() {
     if (currentVideoTrack) return;
+    if (!isMediaSupported()) {
+        ui.addMessage("Video access failed: Peer-to-peer media requires a secure context (HTTPS or localhost).", "system");
+        return;
+    }
+
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         const track = stream.getVideoTracks()[0];
@@ -59,9 +88,8 @@ async function acquireVideo() {
         ui.setLocalStream(localStream);
         ui.updateVideoStatus(true);
 
-        // Populate cameras if first time
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        ui.setCameras(devices.filter((d) => d.kind === "videoinput"));
+        // Populate cameras now that we have permission (labels will be present)
+        await updateCameraList();
 
         if (peer) {
             peer.addTrack(track, localStream);
@@ -69,7 +97,7 @@ async function acquireVideo() {
         }
     } catch (err) {
         console.error("Failed to acquire video", err);
-        ui.addMessage("Camera access denied.", "system");
+        ui.addMessage("Camera access denied or unavailable.", "system");
     }
 }
 
@@ -223,6 +251,7 @@ ui.onToggleVideo = () => {
 };
 
 ui.onChangeCamera = async (deviceId) => {
+    if (!isMediaSupported()) return;
     try {
         const stream = await navigator.mediaDevices.getUserMedia({
             video: { deviceId: { exact: deviceId } },

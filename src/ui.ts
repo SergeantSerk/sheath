@@ -324,7 +324,7 @@ export class UI {
 
   setCameras(devices: MediaDeviceInfo[]) {
     this.cameraSelect.innerHTML = devices
-      .map((d) => `<option value="${d.deviceId}">${d.label || `Camera ${d.deviceId.slice(0, 4)}`}</option>`)
+      .map((d, i) => `<option value="${d.deviceId}">${d.label || `Camera ${i + 1} (${d.deviceId.slice(0, 4)})`}</option>`)
       .join("");
   }
 }
