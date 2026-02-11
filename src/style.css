@@ -584,6 +584,53 @@ body {
   padding: 10px 14px;
 }
 
+.btn-image {
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+}
+
+.btn-image:hover:not(:disabled) {
+  color: var(--accent);
+  background: var(--bg-surface-hover);
+}
+
+.message-image-container {
+  padding: 0;
+  overflow: hidden;
+  max-width: 85%;
+  background: transparent !important;
+  border: none !important;
+}
+
+.message-image-container .message-content {
+  position: relative;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  line-height: 0;
+}
+
+.chat-image {
+  max-width: 100%;
+  max-height: 400px;
+  display: block;
+  object-fit: contain;
+  background: var(--bg-card);
+}
+
+.message-image-container .message-time {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.6rem;
+}
+
 .input {
   padding: 10px 14px;
   background: var(--bg-surface);

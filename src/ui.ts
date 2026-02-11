@@ -20,6 +20,8 @@ export class UI {
   private messagesContainer!: HTMLElement;
   private messageInput!: HTMLInputElement;
   private sendBtn!: HTMLButtonElement;
+  private imageBtn!: HTMLButtonElement;
+  private imageInput!: HTMLInputElement;
   private joinInput!: HTMLInputElement;
   private localVideo!: HTMLVideoElement;
   private remoteVideo!: HTMLVideoElement;
@@ -33,6 +35,7 @@ export class UI {
   public onSendMessage?: (message: string) => void;
   public onToggleAudio?: () => void;
   public onToggleVideo?: () => void;
+  public onSendImage?: (image: Blob) => void;
   public onChangeCamera?: (deviceId: string) => void;
 
   constructor(appElement: HTMLElement) {
@@ -156,6 +159,10 @@ export class UI {
               <button class="btn btn-primary btn-send" id="sendBtn" disabled>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               </button>
+              <button class="btn btn-secondary btn-image" id="imageBtn" title="Send Image" disabled>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </button>
+              <input type="file" id="imageInput" class="hidden" accept="image/*" />
             </div>
           </div>
         </main>
@@ -176,6 +183,8 @@ export class UI {
     this.messagesContainer = document.getElementById("messagesContainer")!;
     this.messageInput = document.getElementById("messageInput") as HTMLInputElement;
     this.sendBtn = document.getElementById("sendBtn") as HTMLButtonElement;
+    this.imageBtn = document.getElementById("imageBtn") as HTMLButtonElement;
+    this.imageInput = document.getElementById("imageInput") as HTMLInputElement;
     this.joinInput = document.getElementById("joinInput") as HTMLInputElement;
     this.localVideo = document.getElementById("localVideo") as HTMLVideoElement;
     this.remoteVideo = document.getElementById("remoteVideo") as HTMLVideoElement;
@@ -231,6 +240,17 @@ export class UI {
         this.onChangeCamera?.(this.cameraSelect.value);
       }
     });
+
+    this.imageBtn.addEventListener("click", () => this.imageInput.click());
+
+    this.imageInput.addEventListener("change", () => {
+      const file = this.imageInput.files?.[0];
+      if (file) {
+        this.onSendImage?.(file);
+        this.addMessage(file, "sent");
+        this.imageInput.value = ""; // Clear for same file re-selection
+      }
+    });
   }
 
   private trySend() {
@@ -260,21 +280,40 @@ export class UI {
     this.lobbyView.classList.add("hidden");
     this.chatView.classList.remove("hidden");
     this.sendBtn.disabled = false;
+    this.imageBtn.disabled = false;
     this.messageInput.focus();
   }
 
-  addMessage(text: string, type: "sent" | "received" | "system") {
+  addMessage(content: string | Blob, type: "sent" | "received" | "system") {
     const el = document.createElement("div");
     el.className = `message message-${type}`;
 
     if (type === "system") {
-      el.textContent = text;
+      el.textContent = content as string;
     } else {
       const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      el.innerHTML = `
-        <span class="message-text">${this.escapeHtml(text)}</span>
-        <span class="message-time">${time}</span>
-      `;
+
+      if (content instanceof Blob) {
+        const url = URL.createObjectURL(content);
+        el.classList.add("message-image-container");
+        el.innerHTML = `
+          <div class="message-content">
+            <img src="${url}" class="chat-image" alt="Shared image" />
+            <span class="message-time">${time}</span>
+          </div>
+        `;
+
+        // Revoke Object URL after image loads to free memory
+        const img = el.querySelector("img");
+        if (img) {
+          img.onload = () => URL.revokeObjectURL(url);
+        }
+      } else {
+        el.innerHTML = `
+          <span class="message-text">${this.escapeHtml(content)}</span>
+          <span class="message-time">${time}</span>
+        `;
+      }
     }
 
     this.messagesContainer.appendChild(el);
@@ -283,11 +322,13 @@ export class UI {
 
   disableChat() {
     this.sendBtn.disabled = true;
+    this.imageBtn.disabled = true;
     this.messageInput.disabled = true;
   }
 
   enableChat() {
     this.sendBtn.disabled = false;
+    this.imageBtn.disabled = false;
     this.messageInput.disabled = false;
     this.messageInput.focus();
   }

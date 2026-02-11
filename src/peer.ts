@@ -1,5 +1,5 @@
 export type PeerCallbacks = {
-    onMessage?: (message: string) => void;
+    onMessage?: (message: string | Blob) => void;
     onStateChange?: (state: RTCPeerConnectionState) => void;
     onIceStateChange?: (state: RTCIceConnectionState) => void;
     onIceCandidate?: (candidate: RTCIceCandidateInit) => void;
@@ -58,6 +58,7 @@ export class PeerManager {
 
     private setupDataChannel(channel: RTCDataChannel) {
         this.dc = channel;
+        this.dc.binaryType = "blob";
 
         this.dc.onopen = () => {
             this.callbacks.onDataChannelOpen?.();
@@ -117,9 +118,9 @@ export class PeerManager {
         this.pendingCandidates = [];
     }
 
-    sendMessage(message: string) {
+    sendMessage(message: string | Blob) {
         if (this.dc?.readyState === "open") {
-            this.dc.send(message);
+            this.dc.send(message as any); // TS sometimes complains about Blob if types aren't perfect
         }
     }
 

@@ -257,6 +257,10 @@ ui.onSendMessage = (message) => {
     peer?.sendMessage(message);
 };
 
+ui.onSendImage = (image) => {
+    peer?.sendMessage(image);
+};
+
 ui.onToggleAudio = () => {
     if (currentAudioTrack) {
         currentAudioTrack.enabled = !currentAudioTrack.enabled;
