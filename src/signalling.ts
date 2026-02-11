@@ -1,4 +1,4 @@
-export type SignalingEvent =
+export type SignallingEvent =
     | { type: "room-created"; code: string }
     | { type: "room-joined"; code: string }
     | { type: "peer-joined" }
@@ -8,7 +8,7 @@ export type SignalingEvent =
     | { type: "ice-candidate"; candidate: RTCIceCandidateInit }
     | { type: "error"; message: string };
 
-export type SignalingCallbacks = {
+export type SignallingCallbacks = {
     onRoomCreated?: (code: string) => void;
     onRoomJoined?: (code: string) => void;
     onPeerJoined?: () => void;
@@ -21,11 +21,11 @@ export type SignalingCallbacks = {
     onClose?: () => void;
 };
 
-export class SignalingClient {
+export class SignallingClient {
     private ws: WebSocket | null = null;
-    private callbacks: SignalingCallbacks;
+    private callbacks: SignallingCallbacks;
 
-    constructor(callbacks: SignalingCallbacks) {
+    constructor(callbacks: SignallingCallbacks) {
         this.callbacks = callbacks;
     }
 
@@ -45,7 +45,7 @@ export class SignalingClient {
         };
 
         this.ws.onmessage = (event) => {
-            let msg: SignalingEvent;
+            let msg: SignallingEvent;
             try {
                 msg = JSON.parse(event.data);
             } catch {

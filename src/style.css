@@ -91,7 +91,24 @@ body {
 .status-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 1.5rem;
+}
+
+.latency-info {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 8px;
+  border-radius: 6px;
+  animation: fadeIn 0.3s ease;
+  white-space: nowrap;
+}
+
+.latency-info svg {
+  opacity: 0.6;
 }
 
 .status-indicator {

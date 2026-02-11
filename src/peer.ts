@@ -129,6 +129,24 @@ export class PeerManager {
         }
     }
 
+    async getRTT(): Promise<number | null> {
+        if (this.pc.connectionState !== "connected") return null;
+
+        try {
+            const stats = await this.pc.getStats();
+            let rtt: number | null = null;
+            stats.forEach((report) => {
+                if (report.type === "candidate-pair" && report.state === "succeeded" && report.currentRoundTripTime !== undefined) {
+                    rtt = report.currentRoundTripTime * 1000; // seconds to ms
+                }
+            });
+            return rtt;
+        } catch (err) {
+            console.error("Error getting RTT stats:", err);
+            return null;
+        }
+    }
+
     get connectionState(): RTCPeerConnectionState {
         return this.pc.connectionState;
     }

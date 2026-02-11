@@ -26,6 +26,7 @@ export class UI {
   private muteBtn!: HTMLButtonElement;
   private cameraBtn!: HTMLButtonElement;
   private cameraSelect!: HTMLSelectElement;
+  private latencyLabel!: HTMLSpanElement;
 
   public onCreateRoom?: () => void;
   public onJoinRoom?: (code: string) => void;
@@ -54,6 +55,10 @@ export class UI {
             <div class="status-indicator">
               <span class="status-dot" id="statusDot"></span>
               <span class="status-text" id="statusText">Initializing</span>
+            </div>
+            <div class="latency-info hidden" id="latencyInfo">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <span id="latencyValue">--</span>ms
             </div>
             <span class="detail-text" id="detailText"></span>
           </div>
@@ -177,6 +182,7 @@ export class UI {
     this.muteBtn = document.getElementById("muteBtn") as HTMLButtonElement;
     this.cameraBtn = document.getElementById("cameraBtn") as HTMLButtonElement;
     this.cameraSelect = document.getElementById("cameraSelect") as HTMLSelectElement;
+    this.latencyLabel = document.getElementById("latencyValue") as HTMLSpanElement;
   }
 
   private bindEvents() {
@@ -326,5 +332,17 @@ export class UI {
     this.cameraSelect.innerHTML = devices
       .map((d, i) => `<option value="${d.deviceId}">${d.label || `Camera ${i + 1} (${d.deviceId.slice(0, 4)})`}</option>`)
       .join("");
+  }
+
+  setLatency(ms: number | null) {
+    const info = document.getElementById("latencyInfo");
+    if (!info) return;
+
+    if (ms === null) {
+      info.classList.add("hidden");
+    } else {
+      info.classList.remove("hidden");
+      this.latencyLabel.textContent = Math.round(ms).toString();
+    }
   }
 }

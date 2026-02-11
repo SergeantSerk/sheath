@@ -4,7 +4,7 @@ Sheath is a minimal, secure, peer-to-peer (P2P) chat application built with mode
 
 ## Features
 
-- **No Server Storage**: Messages are sent directly between peers via `RTCPeerConnection`. The server is only used for initial signaling (handshake) and stores **zero** message data.
+- **No Server Storage**: Messages are sent directly between peers via `RTCPeerConnection`. The server is only used for initial signalling (handshake) and stores **zero** message data.
 - **End-to-End Encryption**: All communication is secured via DTLS (Datagram Transport Layer Security) as part of the WebRTC standard.
 - **Ephemeral**: Chat history exists only in your browser's memory. Refreshing the page wipes everything.
 - **Simple Room System**: Create a room, share the 6-character code, and start chatting.
@@ -24,9 +24,9 @@ Sheath is a minimal, secure, peer-to-peer (P2P) chat application built with mode
 
 ## Local Development
 
-### 1. Signaling Server
+### 1. signalling Server
 
-Start the WebSocket signaling server (runs on port 3001):
+Start the WebSocket signalling server (runs on port 3001):
 
 ```bash
 cd server
@@ -56,9 +56,9 @@ You can run the entire stack (client + server) using Docker Compose.
 docker compose up --build
 ```
 
-- **App (Client + Signaling)**: [http://localhost:3000](http://localhost:3000)
+- **App (Client + signalling)**: [http://localhost:3000](http://localhost:3000)
 
-The app is now consolidated into a single container running both static file serving and WebSocket signaling on port 3000.
+The app is now consolidated into a single container running both static file serving and WebSocket signalling on port 3000.
 
 ### Stop Containers
 

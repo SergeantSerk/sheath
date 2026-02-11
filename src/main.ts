@@ -1,18 +1,19 @@
-import { SignalingClient } from "./signaling";
+import { SignallingClient } from "./signalling";
 import { PeerManager } from "./peer";
 import { UI } from "./ui";
 import "./style.css";
 
 const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-const SIGNALING_URL = `${protocol}//${window.location.host}`;
+const SIGNALLING_URL = `${protocol}//${window.location.host}`;
 
 const app = document.getElementById("app")!;
 const ui = new UI(app);
 
-let signaling: SignalingClient;
+let signalling: SignallingClient;
 let peer: PeerManager | null = null;
 let isHost = false;
 
+let statsInterval: number | null = null;
 let localStream: MediaStream | null = null;
 let currentVideoTrack: MediaStreamTrack | null = null;
 let currentAudioTrack: MediaStreamTrack | null = null;
@@ -105,8 +106,28 @@ async function negotiate() {
     if (peer) {
         ui.setStatus("connecting", "Negotiating", "Updating connection...");
         const offer = await peer.createOffer();
-        signaling.sendOffer(offer);
+        signalling.sendOffer(offer);
     }
+}
+
+function startStatsPolling() {
+    stopStatsPolling();
+    statsInterval = window.setInterval(async () => {
+        if (peer && peer.connectionState === "connected") {
+            const rtt = await peer.getRTT();
+            ui.setLatency(rtt);
+        } else {
+            stopStatsPolling();
+        }
+    }, 2000);
+}
+
+function stopStatsPolling() {
+    if (statsInterval) {
+        clearInterval(statsInterval);
+        statsInterval = null;
+    }
+    ui.setLatency(null);
 }
 
 function initPeer() {
@@ -120,16 +141,19 @@ function initPeer() {
             switch (state) {
                 case "connected":
                     ui.setStatus("connected", "Connected", "Peer-to-peer · DTLS encrypted");
+                    startStatsPolling();
                     break;
                 case "disconnected":
                     ui.setStatus("disconnected", "Disconnected", "Peer connection lost");
                     ui.disableChat();
                     ui.addMessage("Peer disconnected.", "system");
+                    stopStatsPolling();
                     break;
                 case "failed":
                     ui.setStatus("failed", "Connection Failed", "Could not establish P2P link");
                     ui.disableChat();
                     ui.addMessage("Connection failed. Please refresh and try again.", "system");
+                    stopStatsPolling();
                     break;
                 case "connecting":
                     ui.setStatus("connecting", "Connecting", "Establishing peer connection...");
@@ -142,7 +166,7 @@ function initPeer() {
             }
         },
         onIceCandidate: (candidate) => {
-            signaling.sendIceCandidate(candidate);
+            signalling.sendIceCandidate(candidate);
         },
         onDataChannelOpen: () => {
             ui.showChat();
@@ -166,12 +190,12 @@ function initPeer() {
     }
 }
 
-signaling = new SignalingClient({
+signalling = new SignallingClient({
     onOpen: () => {
-        ui.setStatus("idle", "Ready", "Connected to signaling server");
+        ui.setStatus("idle", "Ready", "Connected to signalling server");
     },
     onClose: () => {
-        ui.setStatus("disconnected", "Server Disconnected", "Signaling server unreachable");
+        ui.setStatus("disconnected", "Server Disconnected", "Signalling server unreachable");
     },
     onError: (message) => {
         ui.setStatus("error", "Error", message);
@@ -191,7 +215,7 @@ signaling = new SignalingClient({
             ui.setStatus("connecting", "Connecting", "Creating offer...");
             initPeer();
             const offer = await peer!.createOffer();
-            signaling.sendOffer(offer);
+            signalling.sendOffer(offer);
         }
     },
     onOffer: async (sdp) => {
@@ -199,7 +223,7 @@ signaling = new SignalingClient({
         initPeer();
         ui.setStatus("connecting", "Negotiating", "Handling incoming offer...");
         const answer = await peer!.handleOffer(sdp);
-        signaling.sendAnswer(answer);
+        signalling.sendAnswer(answer);
     },
     onAnswer: async (sdp) => {
         // Host receives the answer
@@ -213,6 +237,7 @@ signaling = new SignalingClient({
         ui.setStatus("disconnected", "Peer Left", "The other user has disconnected");
         ui.disableChat();
         ui.addMessage("Peer has left the room.", "system");
+        stopStatsPolling();
         peer?.destroy();
         peer = null;
     },
@@ -221,11 +246,11 @@ signaling = new SignalingClient({
 // --- UI event handlers ---
 
 ui.onCreateRoom = () => {
-    signaling.createRoom();
+    signalling.createRoom();
 };
 
 ui.onJoinRoom = (code) => {
-    signaling.joinRoom(code);
+    signalling.joinRoom(code);
 };
 
 ui.onSendMessage = (message) => {
@@ -280,5 +305,5 @@ ui.onChangeCamera = async (deviceId) => {
 };
 
 // --- Connect ---
-signaling.connect(SIGNALING_URL);
-ui.setStatus("connecting", "Connecting", "Reaching signaling server...");
+signalling.connect(SIGNALLING_URL);
+ui.setStatus("connecting", "Connecting", "Reaching signalling server...");
