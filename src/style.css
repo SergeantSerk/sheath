@@ -597,8 +597,7 @@ body {
 
 .message-image-container {
   padding: 0;
-  overflow: hidden;
-  max-width: 85%;
+  width: 50%;
   background: transparent !important;
   border: none !important;
 }
@@ -606,16 +605,14 @@ body {
 .message-image-container .message-content {
   position: relative;
   border-radius: var(--radius-sm);
-  overflow: hidden;
   border: 1px solid var(--border);
   line-height: 0;
 }
 
 .chat-image {
-  max-width: 100%;
-  max-height: 400px;
+  width: 100%;
+  height: auto;
   display: block;
-  object-fit: contain;
   background: var(--bg-card);
 }
 
