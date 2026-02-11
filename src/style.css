@@ -614,6 +614,10 @@ body {
   height: auto;
   display: block;
   background: var(--bg-card);
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: auto;
+  /* Allow events for JS-based context menu prevention */
 }
 
 .message-image-container .message-time {
@@ -622,7 +626,7 @@ body {
   right: 8px;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
-  padding: 2px 6px;
+  padding: 8px 5px;
   border-radius: 4px;
   color: #fff;
   font-size: 0.6rem;

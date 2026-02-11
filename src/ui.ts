@@ -303,10 +303,12 @@ export class UI {
           </div>
         `;
 
-        // Revoke Object URL after image loads to free memory
+        // Protections and cleanup
         const img = el.querySelector("img");
         if (img) {
           img.onload = () => URL.revokeObjectURL(url);
+          img.oncontextmenu = (e) => e.preventDefault();
+          img.ondragstart = (e) => e.preventDefault();
         }
       } else {
         el.innerHTML = `
