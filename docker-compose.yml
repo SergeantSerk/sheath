@@ -1,6 +1,6 @@
 services:
   app:
-    build: ./client
+    build: .
     container_name: sheath-app
     ports:
       - "3000:3000"
