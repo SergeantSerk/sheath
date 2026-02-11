@@ -56,8 +56,9 @@ You can run the entire stack (client + server) using Docker Compose.
 docker compose up --build
 ```
 
-- **Client**: [http://localhost:8080](http://localhost:8080)
-- **Signaling Server**: `ws://localhost:3001`
+- **App (Client + Signaling)**: [http://localhost:3000](http://localhost:3000)
+
+The app is now consolidated into a single container running both static file serving and WebSocket signaling on port 3000.
 
 ### Stop Containers
 

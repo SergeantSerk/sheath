@@ -1,23 +1,9 @@
 services:
-  signaling:
-    build: ./server
-    container_name: sheath-signaling
-    ports:
-      - "3001:3001"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"const ws = new (require('ws'))('ws://localhost:3001'); ws.on('open', () => { ws.close(); process.exit(0); }); ws.on('error', () => process.exit(1)); setTimeout(() => process.exit(1), 3000);\""]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
-
-  client:
+  app:
     build: ./client
-    container_name: sheath-client
+    container_name: sheath-app
     ports:
-      - "8080:80"
-    depends_on:
-      signaling:
-        condition: service_healthy
+      - "3000:3000"
     restart: unless-stopped
+    environment:
+      - PORT=3000

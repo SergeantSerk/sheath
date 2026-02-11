@@ -3,7 +3,8 @@ import { PeerManager } from "./peer";
 import { UI } from "./ui";
 import "./style.css";
 
-const SIGNALING_URL = `ws://${window.location.hostname}:3001`;
+const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+const SIGNALING_URL = `${protocol}//${window.location.host}`;
 
 const app = document.getElementById("app")!;
 const ui = new UI(app);

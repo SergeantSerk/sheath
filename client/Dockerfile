@@ -1,20 +1,19 @@
-# --- Build stage ---
-FROM node:22-alpine AS build
+FROM node:22-alpine
 
 WORKDIR /app
 
+# install dependencies
 COPY package*.json ./
 RUN npm ci
 
+# copy source
 COPY . .
+
+# build frontend
 RUN npm run build
 
-# --- Production stage ---
-FROM nginx:alpine
+# expose port
+EXPOSE 3000
 
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+# start unified server
+CMD ["npm", "run", "start"]
