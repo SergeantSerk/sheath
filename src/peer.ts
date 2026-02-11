@@ -5,6 +5,7 @@ export type PeerCallbacks = {
     onIceCandidate?: (candidate: RTCIceCandidateInit) => void;
     onDataChannelOpen?: () => void;
     onDataChannelClose?: () => void;
+    onTrack?: (track: MediaStreamTrack, streams: readonly MediaStream[]) => void;
 };
 
 const ICE_SERVERS: RTCIceServer[] = [
@@ -41,6 +42,10 @@ export class PeerManager {
         this.pc.ondatachannel = (event) => {
             this.setupDataChannel(event.channel);
         };
+
+        this.pc.ontrack = (event) => {
+            this.callbacks.onTrack?.(event.track, event.streams);
+        };
     }
 
     private setupDataChannel(channel: RTCDataChannel) {
@@ -60,11 +65,13 @@ export class PeerManager {
     }
 
     async createOffer(): Promise<RTCSessionDescriptionInit> {
-        // Host creates the data channel
-        const channel = this.pc.createDataChannel("chat", {
-            ordered: true,
-        });
-        this.setupDataChannel(channel);
+        // Host creates the data channel if it doesn't exist
+        if (!this.dc) {
+            const channel = this.pc.createDataChannel("chat", {
+                ordered: true,
+            });
+            this.setupDataChannel(channel);
+        }
 
         const offer = await this.pc.createOffer();
         await this.pc.setLocalDescription(offer);
@@ -105,6 +112,20 @@ export class PeerManager {
     sendMessage(message: string) {
         if (this.dc?.readyState === "open") {
             this.dc.send(message);
+        }
+    }
+
+    addTrack(track: MediaStreamTrack, stream: MediaStream) {
+        return this.pc.addTrack(track, stream);
+    }
+
+    async replaceTrack(oldTrack: MediaStreamTrack | null, newTrack: MediaStreamTrack) {
+        const sender = this.pc.getSenders().find((s) => s.track === oldTrack);
+        if (sender) {
+            await sender.replaceTrack(newTrack);
+        } else {
+            // If no sender found for old track, just add it (this might happen on first camera start)
+            // But usually we use addTrack first.
         }
     }
 

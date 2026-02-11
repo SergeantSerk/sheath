@@ -13,7 +13,77 @@ let signaling: SignalingClient;
 let peer: PeerManager | null = null;
 let isHost = false;
 
+let localStream: MediaStream | null = null;
+let currentVideoTrack: MediaStreamTrack | null = null;
+let currentAudioTrack: MediaStreamTrack | null = null;
+
+async function acquireAudio() {
+    if (currentAudioTrack) return;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const track = stream.getAudioTracks()[0];
+        currentAudioTrack = track;
+
+        if (!localStream) {
+            localStream = new MediaStream([track]);
+        } else {
+            localStream.addTrack(track);
+        }
+
+        ui.setLocalStream(localStream);
+        ui.updateAudioStatus(true);
+
+        if (peer) {
+            peer.addTrack(track, localStream);
+            await negotiate();
+        }
+    } catch (err) {
+        console.error("Failed to acquire audio", err);
+        ui.addMessage("Mic access denied.", "system");
+    }
+}
+
+async function acquireVideo() {
+    if (currentVideoTrack) return;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const track = stream.getVideoTracks()[0];
+        currentVideoTrack = track;
+
+        if (!localStream) {
+            localStream = new MediaStream([track]);
+        } else {
+            localStream.addTrack(track);
+        }
+
+        ui.setLocalStream(localStream);
+        ui.updateVideoStatus(true);
+
+        // Populate cameras if first time
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        ui.setCameras(devices.filter((d) => d.kind === "videoinput"));
+
+        if (peer) {
+            peer.addTrack(track, localStream);
+            await negotiate();
+        }
+    } catch (err) {
+        console.error("Failed to acquire video", err);
+        ui.addMessage("Camera access denied.", "system");
+    }
+}
+
+async function negotiate() {
+    if (peer) {
+        ui.setStatus("connecting", "Negotiating", "Updating connection...");
+        const offer = await peer.createOffer();
+        signaling.sendOffer(offer);
+    }
+}
+
 function initPeer() {
+    if (peer) return; // Don't re-init if exists
+
     peer = new PeerManager({
         onMessage: (message) => {
             ui.addMessage(message, "received");
@@ -55,7 +125,17 @@ function initPeer() {
             ui.setStatus("disconnected", "Disconnected", "Data channel closed");
             ui.disableChat();
         },
+        onTrack: (_track, streams) => {
+            ui.setRemoteStream(streams[0]);
+        },
     });
+
+    // Add local tracks to peer
+    if (localStream) {
+        localStream.getTracks().forEach((track) => {
+            peer?.addTrack(track, localStream!);
+        });
+    }
 }
 
 signaling = new SignalingClient({
@@ -89,13 +169,13 @@ signaling = new SignalingClient({
     onOffer: async (sdp) => {
         // Guest receives the offer and creates an answer
         initPeer();
-        ui.setStatus("connecting", "Connecting", "Creating answer...");
+        ui.setStatus("connecting", "Negotiating", "Handling incoming offer...");
         const answer = await peer!.handleOffer(sdp);
         signaling.sendAnswer(answer);
     },
     onAnswer: async (sdp) => {
         // Host receives the answer
-        ui.setStatus("connecting", "Connecting", "Finalizing connection...");
+        ui.setStatus("connected", "Connected", "Connection updated");
         await peer!.handleAnswer(sdp);
     },
     onIceCandidate: async (candidate) => {
@@ -122,6 +202,52 @@ ui.onJoinRoom = (code) => {
 
 ui.onSendMessage = (message) => {
     peer?.sendMessage(message);
+};
+
+ui.onToggleAudio = () => {
+    if (currentAudioTrack) {
+        currentAudioTrack.enabled = !currentAudioTrack.enabled;
+        ui.updateAudioStatus(currentAudioTrack.enabled);
+    } else {
+        acquireAudio();
+    }
+};
+
+ui.onToggleVideo = () => {
+    if (currentVideoTrack) {
+        currentVideoTrack.enabled = !currentVideoTrack.enabled;
+        ui.updateVideoStatus(currentVideoTrack.enabled);
+    } else {
+        acquireVideo();
+    }
+};
+
+ui.onChangeCamera = async (deviceId) => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { deviceId: { exact: deviceId } },
+        });
+        const newVideoTrack = stream.getVideoTracks()[0];
+
+        if (peer) {
+            await peer.replaceTrack(currentVideoTrack, newVideoTrack);
+        }
+
+        if (currentVideoTrack) {
+            currentVideoTrack.stop(); // Stop old track
+        }
+
+        currentVideoTrack = newVideoTrack;
+
+        // Update local stream in UI
+        if (localStream) {
+            localStream.removeTrack(localStream.getVideoTracks()[0]);
+            localStream.addTrack(newVideoTrack);
+            ui.setLocalStream(localStream);
+        }
+    } catch (err) {
+        console.error("Failed to switch camera", err);
+    }
 };
 
 // --- Connect ---
