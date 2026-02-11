@@ -11,6 +11,8 @@ export type PeerCallbacks = {
 const ICE_SERVERS: RTCIceServer[] = [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:stun.cloudflare.com:3478" },
+    { urls: "stun:stun.stunprotocol.org:3478" },
 ];
 
 export class PeerManager {
@@ -22,7 +24,13 @@ export class PeerManager {
 
     constructor(callbacks: PeerCallbacks) {
         this.callbacks = callbacks;
-        this.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+        this.pc = new RTCPeerConnection({
+            iceServers: ICE_SERVERS,
+            iceCandidatePoolSize: 2,
+            bundlePolicy: "max-bundle",
+            rtcpMuxPolicy: "require",
+            iceTransportPolicy: "all",
+        });
 
         this.pc.onicecandidate = (event) => {
             if (event.candidate) {
