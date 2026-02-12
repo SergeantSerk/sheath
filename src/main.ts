@@ -224,6 +224,12 @@ signalling = new SignallingClient({
         ui.setStatus("connecting", "Negotiating", "Handling incoming offer...");
         const answer = await peer!.handleOffer(sdp);
         signalling.sendAnswer(answer);
+
+        // If we're already connected (renegotiation), restore connected status
+        // because onStateChange won't fire if state remains "connected"
+        if (peer?.connectionState === "connected") {
+            ui.setStatus("connected", "Connected", "Connection updated");
+        }
     },
     onAnswer: async (sdp) => {
         // Host receives the answer
