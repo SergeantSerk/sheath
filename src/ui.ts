@@ -22,6 +22,8 @@ export class UI {
   private sendBtn!: HTMLButtonElement;
   private imageBtn!: HTMLButtonElement;
   private imageInput!: HTMLInputElement;
+  private emojiBtn!: HTMLButtonElement;
+  private emojiPicker!: HTMLElement;
   private joinInput!: HTMLInputElement;
   private localVideo!: HTMLVideoElement;
   private remoteVideo!: HTMLVideoElement;
@@ -175,6 +177,12 @@ export class UI {
               <button class="btn btn-secondary btn-image" id="imageBtn" title="Send Image" disabled>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
               </button>
+              <div class="emoji-container">
+                <button class="btn btn-secondary btn-emoji" id="emojiBtn" title="Insert Emoji" disabled>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                </button>
+                <div class="emoji-picker hidden" id="emojiPicker"></div>
+              </div>
               <input type="file" id="imageInput" class="hidden" accept="image/*" />
             </div>
           </div>
@@ -198,6 +206,8 @@ export class UI {
     this.sendBtn = document.getElementById("sendBtn") as HTMLButtonElement;
     this.imageBtn = document.getElementById("imageBtn") as HTMLButtonElement;
     this.imageInput = document.getElementById("imageInput") as HTMLInputElement;
+    this.emojiBtn = document.getElementById("emojiBtn") as HTMLButtonElement;
+    this.emojiPicker = document.getElementById("emojiPicker")!;
     this.joinInput = document.getElementById("joinInput") as HTMLInputElement;
     this.localVideo = document.getElementById("localVideo") as HTMLVideoElement;
     this.remoteVideo = document.getElementById("remoteVideo") as HTMLVideoElement;
@@ -281,6 +291,51 @@ export class UI {
       this.remoteHideBtn.querySelector(".icon-off")?.classList.toggle("hidden", !hidden);
       this.remoteHideBtn.classList.toggle("active", hidden);
     });
+
+    // Emoji picker events
+    this.emojiBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.toggleEmojiPicker();
+    });
+
+    document.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      if (!this.emojiPicker.contains(target) && target !== this.emojiBtn) {
+        this.emojiPicker.classList.add("hidden");
+      }
+    });
+
+    this.renderEmojis();
+  }
+
+  private renderEmojis() {
+    const emojis = [
+      "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😮", "😯", "😲", "😳", "🥺", "😦", "😧", "😨", "😰", "😥", "😢", "😭", "😱", "😖", "😣", "😞", "😓", "😩", "😫", "🥱", "😤", "😡", "😠", "🤬", "😈", "👿", "💀", "☠️", "💩", "🤡", "👹", "👺", "👻", "👽", "👾", "🤖", "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "🙈", "🙉", "🙊", "💋", "💌", "💘", "💝", "💖", "💗", "💓", "💞", "💕", "💟", "❣️", "💔", "❤️", "🧡", "💛", "💚", "💙", "💜", "🤎", "🖤", "🤍", "💯", "💢", "💥", "💫", "💦", "💨", "🕳️", "💣", "💬", "👁️‍🗨️", "🗨️", "🗯️", "💭", "💤", "👋", "🤚", "🖐️", "✋", "🖖", "👌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "🖕", "👇", "☝️", "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "✍️", "💅", "🤳", "💪", "🦾", "🦵", "🦿", "🦶", "👣", "👂", "🦻", "👃", "🧠", "🦷", "🦴", "👀", "👁️", "👅", "👄", "👶", "🧒", "👦", "👧", "🧑", "👱", "👨", "🧔", "👩", "🧓", "👴", "👵", "🚀", "🛸", "🚁", "🛶", "⛵", "🚤", "🚢", "🛫", "🛬", "🛰️", "🚲", "🛴", "🛵", "🏍️", "🏎️", "🚜", "🏘️", "🏠", "🏡", "🏢", "🏣", "🏤", "🏥", "🏦", "🏨", "🏩", "🏪", "🏫", "🏬", "🏭", "🏯", "🏰", "💒", "🗼", "🗽", "⛪", "🕌", "🛕", "🕍", "⛩️", "🕋", "⚡", "🔥", "⛄", "☃️", "❄️", "☄️", "🌈", "☀️", "🌤️", "⛅", "🌥️", "☁️", "🌦️", "🌧️", "⛈️", "🌩️", "🌨️"
+    ];
+
+    this.emojiPicker.innerHTML = emojis
+      .map(emoji => `<button class="emoji-item">${emoji}</button>`)
+      .join("");
+
+    this.emojiPicker.querySelectorAll(".emoji-item").forEach(btn => {
+      btn.addEventListener("click", () => {
+        this.insertEmoji(btn.textContent || "");
+        this.emojiPicker.classList.add("hidden");
+        this.messageInput.focus();
+      });
+    });
+  }
+
+  private toggleEmojiPicker() {
+    this.emojiPicker.classList.toggle("hidden");
+  }
+
+  private insertEmoji(emoji: string) {
+    const start = this.messageInput.selectionStart || 0;
+    const end = this.messageInput.selectionEnd || 0;
+    const text = this.messageInput.value;
+    this.messageInput.value = text.substring(0, start) + emoji + text.substring(end);
+    this.messageInput.selectionStart = this.messageInput.selectionEnd = start + emoji.length;
   }
 
   private trySend() {
@@ -311,6 +366,7 @@ export class UI {
     this.chatView.classList.remove("hidden");
     this.sendBtn.disabled = false;
     this.imageBtn.disabled = false;
+    this.emojiBtn.disabled = false;
     this.messageInput.focus();
   }
 
@@ -355,12 +411,15 @@ export class UI {
   disableChat() {
     this.sendBtn.disabled = true;
     this.imageBtn.disabled = true;
+    this.emojiBtn.disabled = true;
     this.messageInput.disabled = true;
+    this.emojiPicker.classList.add("hidden");
   }
 
   enableChat() {
     this.sendBtn.disabled = false;
     this.imageBtn.disabled = false;
+    this.emojiBtn.disabled = false;
     this.messageInput.disabled = false;
     this.messageInput.focus();
   }
