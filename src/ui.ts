@@ -256,6 +256,24 @@ export class UI {
       if (e.key === "Enter") this.trySend();
     });
 
+    // Paste image from clipboard
+    this.messageInput.addEventListener("paste", (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            this.onSendImage?.(file);
+            this.addMessage(file, "sent");
+          }
+          break;
+        }
+      }
+    });
+
     document.getElementById("copyCodeBtn")!.addEventListener("click", () => {
       const code = document.getElementById("roomCodeValue")!.textContent || "";
       navigator.clipboard.writeText(code);
