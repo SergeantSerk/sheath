@@ -34,6 +34,7 @@ export class UI {
   private latencyLabel!: HTMLSpanElement;
   private remoteMuteBtn!: HTMLButtonElement;
   private remoteHideBtn!: HTMLButtonElement;
+  private audioContext: AudioContext | null = null;
 
   public onCreateRoom?: () => void;
   public onJoinRoom?: (code: string) => void;
@@ -347,6 +348,83 @@ export class UI {
     this.messageInput.focus();
   }
 
+  private isEmojiOnly(text: string): boolean {
+    // Check if text consists only of emoji characters (including ZWJ sequences and variation selectors)
+    return /^[\p{Emoji}\p{Emoji_Presentation}\u200D\uFE0F]+$/u.test(text);
+  }
+
+  private playNotificationSound() {
+    this.playBeep(800, 0.15);
+  }
+
+  private playJoinSound() {
+    try {
+      if (!this.audioContext) {
+        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      if (this.audioContext.state === "suspended") {
+        this.audioContext.resume();
+      }
+
+      // Ascending two-tone chime (880Hz -> 1046Hz)
+      const now = this.audioContext.currentTime;
+      const osc1 = this.audioContext.createOscillator();
+      const osc2 = this.audioContext.createOscillator();
+      const gainNode = this.audioContext.createGain();
+
+      osc1.connect(gainNode);
+      osc2.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+
+      osc1.frequency.setValueAtTime(880, now);
+      osc1.type = "sine";
+      osc2.frequency.setValueAtTime(1046, now + 0.1);
+      osc2.type = "sine";
+
+      gainNode.gain.setValueAtTime(0.25, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+      osc1.start(now);
+      osc1.stop(now + 0.25);
+      osc2.start(now + 0.1);
+      osc2.stop(now + 0.25);
+    } catch {
+      // Audio not supported
+    }
+  }
+
+  private playLeaveSound() {
+    this.playBeep(400, 0.2);
+  }
+
+  private playBeep(frequency: number, duration: number) {
+    try {
+      if (!this.audioContext) {
+        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      if (this.audioContext.state === "suspended") {
+        this.audioContext.resume();
+      }
+
+      const oscillator = this.audioContext.createOscillator();
+      const gainNode = this.audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+
+      oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+      oscillator.type = "sine";
+
+      gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+
+      oscillator.start(this.audioContext.currentTime);
+      oscillator.stop(this.audioContext.currentTime + duration);
+    } catch {
+      // Audio not supported
+    }
+  }
+
   // --- Public API ---
 
   setStatus(level: StatusLevel, text: string, detail?: string) {
@@ -397,11 +475,18 @@ export class UI {
           img.ondragstart = (e) => e.preventDefault();
         }
       } else {
+        const isEmoji = this.isEmojiOnly(content as string);
+        const emojiClass = isEmoji ? "emoji-only" : "";
         el.innerHTML = `
-          <span class="message-text">${this.escapeHtml(content)}</span>
+          <span class="message-text ${emojiClass}">${this.escapeHtml(content)}</span>
           <span class="message-time">${time}</span>
         `;
       }
+    }
+
+    // Play notification sound for received messages (not sent or system)
+    if (type === "received") {
+      this.playNotificationSound();
     }
 
     this.messagesContainer.appendChild(el);
@@ -476,5 +561,14 @@ export class UI {
       info.classList.remove("hidden");
       this.latencyLabel.textContent = Math.round(ms).toString();
     }
+  }
+
+  // Public methods for peer event sounds
+  notifyPeerJoined() {
+    this.playJoinSound();
+  }
+
+  notifyPeerLeft() {
+    this.playLeaveSound();
   }
 }
