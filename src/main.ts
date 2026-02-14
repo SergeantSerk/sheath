@@ -217,6 +217,7 @@ signalling = new SignallingClient({
             const offer = await peer!.createOffer();
             signalling.sendOffer(offer);
         }
+        ui.notifyPeerJoined();
     },
     onOffer: async (sdp) => {
         // Guest receives the offer and creates an answer
@@ -246,6 +247,7 @@ signalling = new SignallingClient({
         stopStatsPolling();
         peer?.destroy();
         peer = null;
+        ui.notifyPeerLeft();
     },
 });
 
