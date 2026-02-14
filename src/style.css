@@ -526,6 +526,10 @@ body {
   line-height: 1.45;
 }
 
+.message-text.emoji-only {
+  font-size: 1.5rem;
+}
+
 .message-time {
   font-size: 0.65rem;
   color: var(--text-dim);
