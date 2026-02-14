@@ -30,6 +30,7 @@ export class UI {
   private muteBtn!: HTMLButtonElement;
   private cameraBtn!: HTMLButtonElement;
   private cameraSelect!: HTMLSelectElement;
+  private micSelect!: HTMLSelectElement;
 
   private latencyLabel!: HTMLSpanElement;
   private remoteMuteBtn!: HTMLButtonElement;
@@ -43,6 +44,7 @@ export class UI {
   public onToggleVideo?: () => void;
   public onSendImage?: (image: Blob) => void;
   public onChangeCamera?: (deviceId: string) => void;
+  public onChangeMicrophone?: (deviceId: string) => void;
 
   constructor(appElement: HTMLElement) {
     this.app = appElement;
@@ -160,6 +162,12 @@ export class UI {
                   <option value="">Default Camera</option>
                 </select>
               </div>
+              <div class="mic-picker">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                <select id="micSelect" class="select-input">
+                  <option value="">Default Microphone</option>
+                </select>
+              </div>
             </div>
 
             <div class="messages" id="messagesContainer"></div>
@@ -215,6 +223,7 @@ export class UI {
     this.muteBtn = document.getElementById("muteBtn") as HTMLButtonElement;
     this.cameraBtn = document.getElementById("cameraBtn") as HTMLButtonElement;
     this.cameraSelect = document.getElementById("cameraSelect") as HTMLSelectElement;
+    this.micSelect = document.getElementById("micSelect") as HTMLSelectElement;
     this.latencyLabel = document.getElementById("latencyValue") as HTMLSpanElement;
     this.remoteMuteBtn = document.getElementById("remoteMuteBtn") as HTMLButtonElement;
     this.remoteHideBtn = document.getElementById("remoteHideBtn") as HTMLButtonElement;
@@ -264,6 +273,12 @@ export class UI {
     this.cameraSelect.addEventListener("change", () => {
       if (this.cameraSelect.value) {
         this.onChangeCamera?.(this.cameraSelect.value);
+      }
+    });
+
+    this.micSelect.addEventListener("change", () => {
+      if (this.micSelect.value) {
+        this.onChangeMicrophone?.(this.micSelect.value);
       }
     });
 
@@ -548,6 +563,12 @@ export class UI {
   setCameras(devices: MediaDeviceInfo[]) {
     this.cameraSelect.innerHTML = devices
       .map((d, i) => `<option value="${d.deviceId}">${d.label || `Camera ${i + 1} (${d.deviceId.slice(0, 4)})`}</option>`)
+      .join("");
+  }
+
+  setMicrophones(devices: MediaDeviceInfo[]) {
+    this.micSelect.innerHTML = devices
+      .map((d, i) => `<option value="${d.deviceId}">${d.label || `Microphone ${i + 1} (${d.deviceId.slice(0, 4)})`}</option>`)
       .join("");
   }
 

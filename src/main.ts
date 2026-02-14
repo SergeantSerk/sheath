@@ -37,6 +37,17 @@ async function updateCameraList() {
     }
 }
 
+async function updateMicrophoneList() {
+    if (!isMediaSupported()) return;
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const microphones = devices.filter((d) => d.kind === "audioinput");
+        ui.setMicrophones(microphones);
+    } catch (err) {
+        console.error("Failed to list microphones", err);
+    }
+}
+
 async function acquireAudio() {
     if (currentAudioTrack) return;
     if (!isMediaSupported()) {
@@ -57,6 +68,9 @@ async function acquireAudio() {
 
         ui.setLocalStream(localStream);
         ui.updateAudioStatus(true);
+
+        // Populate microphones now that we have permission (labels will be present)
+        await updateMicrophoneList();
 
         if (peer) {
             peer.addTrack(track, localStream);
@@ -313,6 +327,35 @@ ui.onChangeCamera = async (deviceId) => {
         }
     } catch (err) {
         console.error("Failed to switch camera", err);
+    }
+};
+
+ui.onChangeMicrophone = async (deviceId) => {
+    if (!isMediaSupported()) return;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: { deviceId: { exact: deviceId } },
+        });
+        const newAudioTrack = stream.getAudioTracks()[0];
+
+        if (peer) {
+            await peer.replaceTrack(currentAudioTrack, newAudioTrack);
+        }
+
+        if (currentAudioTrack) {
+            currentAudioTrack.stop(); // Stop old track
+        }
+
+        currentAudioTrack = newAudioTrack;
+
+        // Update local stream in UI
+        if (localStream) {
+            localStream.removeTrack(localStream.getAudioTracks()[0]);
+            localStream.addTrack(newAudioTrack);
+            ui.setLocalStream(localStream);
+        }
+    } catch (err) {
+        console.error("Failed to switch microphone", err);
     }
 };
 

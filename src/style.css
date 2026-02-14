@@ -408,7 +408,8 @@ body {
   flex-shrink: 0;
 }
 
-.camera-picker {
+.camera-picker,
+.mic-picker {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -416,10 +417,14 @@ body {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
+}
+
+.camera-picker {
   margin-left: auto;
 }
 
-.camera-picker svg {
+.camera-picker svg,
+.mic-picker svg {
   color: var(--text-muted);
   flex-shrink: 0;
 }
