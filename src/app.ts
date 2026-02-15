@@ -79,6 +79,12 @@ export class App {
       onIceCandidate: async (candidate) => {
         await this.peer?.addIceCandidate(candidate);
       },
+      onTypingStart: () => {
+        this.ui.showPeerTyping();
+      },
+      onTypingStop: () => {
+        this.ui.hidePeerTyping();
+      },
       onPeerLeft: () => {
         this.ui.setStatus("disconnected", "Peer Left", "The other user has disconnected");
         this.ui.disableChat();
@@ -106,6 +112,14 @@ export class App {
 
     this.ui.onSendImage = (image) => {
       this.peer?.sendMessage(image);
+    };
+
+    this.ui.onTypingStart = () => {
+      this.signalling.sendTypingStart();
+    };
+
+    this.ui.onTypingStop = () => {
+      this.signalling.sendTypingStop();
     };
 
     this.ui.onToggleAudio = () => {

@@ -36,6 +36,20 @@ export const AnswerSchema = z.object({ type: z.literal("answer"), sdp: z.any() }
 export const IceCandidateSchema = z.object({ type: z.literal("ice-candidate"), candidate: z.any() });
 
 /**
+ * Typing start message (client -> server).
+ * Sent when user starts typing a message.
+ * Example: { "type": "typing-start" }
+ */
+export const TypingStartSchema = z.object({ type: z.literal("typing-start") });
+
+/**
+ * Typing stop message (client -> server).
+ * Sent when user stops typing a message.
+ * Example: { "type": "typing-stop" }
+ */
+export const TypingStopSchema = z.object({ type: z.literal("typing-stop") });
+
+/**
  * Union type of all valid message schemas.
  * Used for runtime validation of incoming WebSocket messages from clients.
  */
@@ -45,6 +59,8 @@ export const MessageSchema = z.union([
   OfferSchema,
   AnswerSchema,
   IceCandidateSchema,
+  TypingStartSchema,
+  TypingStopSchema,
 ]);
 
 /**
@@ -58,6 +74,8 @@ export type SignallingEvent =
   | { type: "offer"; sdp: any }
   | { type: "answer"; sdp: any }
   | { type: "ice-candidate"; candidate: any }
+  | { type: "typing-start" }
+  | { type: "typing-stop" }
   | { type: "error"; message: string };
 
 /**
@@ -68,4 +86,6 @@ export type ClientMessage =
   | { type: "join-room"; code: string }
   | { type: "offer"; sdp: any }
   | { type: "answer"; sdp: any }
-  | { type: "ice-candidate"; candidate: any };
+  | { type: "ice-candidate"; candidate: any }
+  | { type: "typing-start" }
+  | { type: "typing-stop" };

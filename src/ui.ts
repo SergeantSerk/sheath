@@ -35,6 +35,9 @@ export class UI {
   private latencyLabel!: HTMLSpanElement;
   private remoteMuteBtn!: HTMLButtonElement;
   private remoteHideBtn!: HTMLButtonElement;
+  private typingIndicator!: HTMLElement;
+  private typingTimeout: number | null = null;
+  private isTyping = false;
   private audioContext: AudioContext | null = null;
 
   public onCreateRoom?: () => void;
@@ -45,6 +48,8 @@ export class UI {
   public onSendImage?: (image: Blob) => void;
   public onChangeCamera?: (deviceId: string) => void;
   public onChangeMicrophone?: (deviceId: string) => void;
+  public onTypingStart?: () => void;
+  public onTypingStop?: () => void;
 
   constructor(appElement: HTMLElement) {
     this.app = appElement;
@@ -171,6 +176,11 @@ export class UI {
             </div>
 
             <div class="messages" id="messagesContainer"></div>
+            <div class="typing-indicator hidden" id="typingIndicator">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
             <div class="chat-input-bar">
               <input 
                 type="text" 
@@ -227,6 +237,7 @@ export class UI {
     this.latencyLabel = document.getElementById("latencyValue") as HTMLSpanElement;
     this.remoteMuteBtn = document.getElementById("remoteMuteBtn") as HTMLButtonElement;
     this.remoteHideBtn = document.getElementById("remoteHideBtn") as HTMLButtonElement;
+    this.typingIndicator = document.getElementById("typingIndicator")!;
   }
 
   private bindEvents() {
@@ -255,6 +266,9 @@ export class UI {
     this.messageInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") this.trySend();
     });
+
+    // Typing indicator - detect user typing
+    this.messageInput.addEventListener("input", () => this.handleTypingInput());
 
     // Paste image from clipboard
     this.messageInput.addEventListener("paste", (e) => {
@@ -520,6 +534,8 @@ export class UI {
     // Play notification sound for received messages (not sent or system)
     if (type === "received") {
       this.playNotificationSound();
+      // Immediately hide typing indicator when receiving a message (peer has finished typing)
+      this.immediateHidePeerTyping();
     }
 
     this.messagesContainer.appendChild(el);
@@ -600,6 +616,60 @@ export class UI {
       info.classList.remove("hidden");
       this.latencyLabel.textContent = Math.round(ms).toString();
     }
+  }
+
+  // ===== Typing Indicator =====
+
+  /**
+   * Handles user typing in the message input.
+   * Sends typing-start once when typing begins, and schedules typing-stop after 5s of inactivity.
+   */
+  private handleTypingInput() {
+    if (!this.isTyping) {
+      this.isTyping = true;
+      this.onTypingStart?.();
+    }
+
+    // Reset the timeout on each keystroke
+    if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
+    }
+
+    this.typingTimeout = window.setTimeout(() => {
+      this.isTyping = false;
+      this.onTypingStop?.();
+      this.typingTimeout = null;
+    }, 5000); // 5 second timeout
+  }
+
+  /**
+   * Shows the peer typing indicator.
+   */
+  showPeerTyping() {
+    this.typingIndicator.classList.remove("hidden", "fade-out");
+  }
+
+  /**
+   * Hides the peer typing indicator with a fade-out animation.
+   */
+  hidePeerTyping() {
+    this.typingIndicator.classList.add("fade-out");
+    // After animation completes, hide the element
+    setTimeout(() => {
+      if (this.typingIndicator.classList.contains("fade-out")) {
+        this.typingIndicator.classList.add("hidden");
+      }
+    }, 200); // Match the CSS transition duration
+  }
+
+  /**
+   * Immediately hides the peer typing indicator without animation.
+   * Used when a message is received, as the peer has finished typing.
+   */
+  immediateHidePeerTyping() {
+    // Clear any pending fade-out timeout
+    this.typingIndicator.classList.remove("fade-out");
+    this.typingIndicator.classList.add("hidden");
   }
 
   // Public methods for peer event sounds

@@ -52,6 +52,10 @@ export class MessageRouter {
       case "ice-candidate":
         this.handleSignalToPeer(ws, msg);
         break;
+      case "typing-start":
+      case "typing-stop":
+        this.handleTyping(ws, msg.type);
+        break;
     }
   }
 
@@ -92,6 +96,16 @@ export class MessageRouter {
     const peer = this.roomManager.getPeer(ws);
     if (peer && peer.readyState === WebSocket.OPEN) {
       this.send(peer, msg);
+    }
+  }
+
+  /**
+   * Forwards typing indicators to the peer.
+   */
+  private handleTyping(ws: WebSocket, type: "typing-start" | "typing-stop") {
+    const peer = this.roomManager.getPeer(ws);
+    if (peer && peer.readyState === WebSocket.OPEN) {
+      this.send(peer, { type });
     }
   }
 

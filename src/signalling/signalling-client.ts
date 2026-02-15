@@ -10,6 +10,8 @@ export type SignallingEvent =
   | { type: "offer"; sdp: RTCSessionDescriptionInit } // WebRTC offer
   | { type: "answer"; sdp: RTCSessionDescriptionInit } // WebRTC answer
   | { type: "ice-candidate"; candidate: RTCIceCandidateInit } // ICE candidate
+  | { type: "typing-start" }                    // Peer started typing
+  | { type: "typing-stop" }                     // Peer stopped typing
   | { type: "error"; message: string };         // Error from server
 
 /**
@@ -24,6 +26,8 @@ export type SignallingCallbacks = {
   onOffer?: (sdp: RTCSessionDescriptionInit) => void;
   onAnswer?: (sdp: RTCSessionDescriptionInit) => void;
   onIceCandidate?: (candidate: RTCIceCandidateInit) => void;
+  onTypingStart?: () => void;
+  onTypingStop?: () => void;
   onError?: (message: string) => void;
   onOpen?: () => void;
   onClose?: () => void;
@@ -95,6 +99,12 @@ export class SignallingClient {
         case "ice-candidate":
           this.callbacks.onIceCandidate?.(msg.candidate);
           break;
+        case "typing-start":
+          this.callbacks.onTypingStart?.();
+          break;
+        case "typing-stop":
+          this.callbacks.onTypingStop?.();
+          break;
         case "error":
           this.callbacks.onError?.(msg.message);
           break;
@@ -145,6 +155,20 @@ export class SignallingClient {
    */
   sendIceCandidate(candidate: RTCIceCandidateInit) {
     this.send({ type: "ice-candidate", candidate });
+  }
+
+  /**
+   * Notifies peer that typing has started.
+   */
+  sendTypingStart() {
+    this.send({ type: "typing-start" });
+  }
+
+  /**
+   * Notifies peer that typing has stopped.
+   */
+  sendTypingStop() {
+    this.send({ type: "typing-stop" });
   }
 
   /**
