@@ -206,6 +206,7 @@ services:
 | 9  | **CI Pipeline**                   | Create GitHub Actions workflow for lint, build, and Docker build.                                                       |
 | 10 | **Documentation**                 | Keep `agents.md` up‑to‑date with any architectural changes.                                                             |
 | 11 | **Documentation Synchronization** | Ensure `agents.md` is updated for every code change; include documentation diffs in pull‑request reviews and CI checks. |
+| 12 | **Code Comments**                 | Add and update comments all around the codebase where relevant and possible, to describe the function of the code.      |
 
 ---
 
