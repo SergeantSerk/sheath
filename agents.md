@@ -19,9 +19,9 @@
 |   Client (Vite)   |   <--->   | Signalling Server |   <--->   |   Client (Vite)   |
 |   (HTML/TS/JS)    | WebSocket |  (Node/Express)   | WebSocket |   (HTML/TS/JS)    |
 +-------------------+           +-------------------+           +-------------------+
-          |                                                             |
-          |                  WebRTC DataChannel (direct)                |
-          +-------------------------------------------------------------+
+          |                                                               |
+          |                  WebRTC DataChannel (direct)                  |
+          +---------------------------------------------------------------+
 - **Client**: Vite + TypeScript + vanilla DOM. Establishes a WebSocket connection to the signalling server for pairing negotiations (room creation, code exchange, ICE candidate exchange). After successful negotiation, peers connect directly via a WebRTC DataChannel for encrypted peer‑to‑peer messaging.  
 - **Signalling Server**: Express + `ws` WebSocket endpoint. Handles room creation, code exchange, and the WebSocket signalling that negotiates client pairings before they establish a direct WebRTC DataChannel.  
 - **Docker**: Provides reproducible runtime for both client and server; orchestrated via `docker‑compose.yml`.  
