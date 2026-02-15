@@ -817,7 +817,10 @@ body {
 /* ===== Footer ===== */
 
 .footer {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   padding: 12px 0;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
@@ -826,6 +829,22 @@ body {
 .footer span {
   font-size: 0.7rem;
   color: var(--text-dim);
+}
+
+.footer-github {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  transition: all var(--transition);
+}
+
+.footer-github:hover {
+  color: var(--text);
+  background: var(--bg-surface-hover);
 }
 
 /* ===== Toast ===== */
