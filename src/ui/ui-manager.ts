@@ -25,6 +25,7 @@ export class UIManager {
   public onSendMessage?: (message: string) => void;
   public onToggleAudio?: () => void;
   public onToggleVideo?: () => void;
+  public onToggleScreenshare?: () => void;
   public onSendImage?: (image: Blob) => void;
   public onChangeCamera?: (deviceId: string) => void;
   public onChangeMicrophone?: (deviceId: string) => void;
@@ -145,6 +146,10 @@ export class UIManager {
               <button class="btn-icon" id="cameraBtn" title="Toggle Video">
                 <svg class="icon-on hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
                 <svg class="icon-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+              <button class="btn-icon" id="screenshareBtn" title="Share Screen">
+                <svg class="icon-on hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><circle cx="12" cy="10" r="3"/></svg>
+                <svg class="icon-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
               </button>
               <div class="camera-picker">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
@@ -279,6 +284,10 @@ export class UIManager {
 
     document.getElementById("cameraBtn")?.addEventListener("click", () => {
       this.onToggleVideo?.();
+    });
+    
+    document.getElementById("screenshareBtn")?.addEventListener("click", () => {
+      this.onToggleScreenshare?.();
     });
 
     document.getElementById("cameraSelect")?.addEventListener("change", () => {
@@ -422,6 +431,13 @@ export class UIManager {
    */
   updateVideoStatus(enabled: boolean) {
     this.deviceSelector.updateVideoButton(enabled);
+  }
+
+  /**
+   * Updates the screenshare toggle button to reflect current state.
+   */
+  updateScreenshareStatus(enabled: boolean) {
+    this.deviceSelector.updateScreenshareButton(enabled);
   }
 
   /**

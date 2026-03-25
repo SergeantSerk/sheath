@@ -78,4 +78,20 @@ export class MediaManager {
     }
   }
 
+  async acquireScreen(): Promise<MediaStream> {
+    if (!this.isSupported || !navigator.mediaDevices.getDisplayMedia) {
+      throw new Error("Screen sharing is not supported in this browser or context");
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false, // We handle audio separately via getUserMedia
+      });
+      return stream;
+    } catch (err) {
+      console.error("Failed to acquire screen", err);
+      throw err;
+    }
+  }
 }

@@ -23,6 +23,7 @@ export class App {
   private localStream: MediaStream | null = null;
   private currentVideoTrack: MediaStreamTrack | null = null;
   private currentAudioTrack: MediaStreamTrack | null = null;
+  private currentScreenTrack: MediaStreamTrack | null = null;
 
   constructor() {
     const app = document.getElementById("app")!;
@@ -137,6 +138,14 @@ export class App {
         this.ui.updateVideoStatus(this.currentVideoTrack.enabled);
       } else {
         this.acquireVideo();
+      }
+    };
+
+    this.ui.onToggleScreenshare = () => {
+      if (this.currentScreenTrack) {
+        this.stopScreenshare();
+      } else {
+        this.acquireScreen();
       }
     };
 
@@ -255,13 +264,88 @@ export class App {
       await this.updateCameraList();
 
       if (this.peer) {
-        this.peer.addTrack(track, this.localStream);
-        await this.negotiate();
+        // If we are screensharing, we don't add the camera track to the peer connection yet
+        // We'll let the user switch between them.
+        if (!this.currentScreenTrack) {
+          this.peer.addTrack(track, this.localStream);
+          await this.negotiate();
+        }
       }
     } catch (err) {
       console.error("Failed to acquire video", err);
       this.ui.addMessage("Camera access denied or unavailable.", "system");
     }
+  }
+
+  private async acquireScreen() {
+    if (this.currentScreenTrack) return;
+
+    try {
+      const stream = await this.mediaManager.acquireScreen();
+      const track = stream.getVideoTracks()[0];
+      this.currentScreenTrack = track;
+
+      track.onended = () => {
+        this.stopScreenshare();
+      };
+
+      if (this.peer) {
+        if (this.currentVideoTrack) {
+          await this.peer.replaceTrack(this.currentVideoTrack, track);
+        } else {
+          this.peer.addTrack(track, this.localStream || new MediaStream([track]));
+          await this.negotiate();
+        }
+      }
+
+      // Update local preview
+      if (this.localStream) {
+        const videoTracks = this.localStream.getVideoTracks();
+        if (videoTracks.length > 0) {
+          this.localStream.removeTrack(videoTracks[0]);
+        }
+        this.localStream.addTrack(track);
+      } else {
+        this.localStream = new MediaStream([track]);
+      }
+
+      this.ui.setLocalStream(this.localStream);
+      this.ui.updateScreenshareStatus(true);
+      // Disable camera button while screensharing for simplicity in this version
+      // or we could allow it but it wouldn't be sent until screenshare stops
+    } catch (err) {
+      console.error("Failed to acquire screen", err);
+      this.ui.addMessage("Screen sharing cancelled or failed.", "system");
+    }
+  }
+
+  private async stopScreenshare() {
+    if (!this.currentScreenTrack) return;
+
+    this.currentScreenTrack.stop();
+    const stoppedTrack = this.currentScreenTrack;
+    this.currentScreenTrack = null;
+
+    if (this.peer) {
+      if (this.currentVideoTrack) {
+        await this.peer.replaceTrack(stoppedTrack, this.currentVideoTrack);
+      } else {
+        // Just remove the track? PeerManager doesn't have removeTrack, but we can't easily remove it from the sender
+        // For now, let's keep it simple. If no camera, just stop.
+      }
+    }
+
+    // Restore camera preview if available
+    if (this.currentVideoTrack && this.localStream) {
+      this.localStream.removeTrack(this.localStream.getVideoTracks()[0]);
+      this.localStream.addTrack(this.currentVideoTrack);
+      this.ui.setLocalStream(this.localStream);
+    } else if (this.localStream) {
+      this.localStream.removeTrack(this.localStream.getVideoTracks()[0]);
+      this.ui.setLocalStream(this.localStream);
+    }
+
+    this.ui.updateScreenshareStatus(false);
   }
 
   private async updateCameraList() {

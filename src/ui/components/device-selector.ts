@@ -8,6 +8,7 @@ export class DeviceSelector {
   private joinInput!: HTMLInputElement;
   private muteBtn!: HTMLButtonElement;
   private cameraBtn!: HTMLButtonElement;
+  private screenshareBtn!: HTMLButtonElement;
   private remoteMuteBtn!: HTMLButtonElement;
   private remoteHideBtn!: HTMLButtonElement;
 
@@ -20,6 +21,7 @@ export class DeviceSelector {
     this.joinInput = document.getElementById("joinInput") as HTMLInputElement;
     this.muteBtn = document.getElementById("muteBtn") as HTMLButtonElement;
     this.cameraBtn = document.getElementById("cameraBtn") as HTMLButtonElement;
+    this.screenshareBtn = document.getElementById("screenshareBtn") as HTMLButtonElement;
     this.remoteMuteBtn = document.getElementById("remoteMuteBtn") as HTMLButtonElement;
     this.remoteHideBtn = document.getElementById("remoteHideBtn") as HTMLButtonElement;
   }
@@ -117,6 +119,18 @@ export class DeviceSelector {
     const iconOff = this.cameraBtn.querySelector(".icon-off");
     if (iconOn) iconOn.classList.toggle("hidden", !enabled);
     if (iconOff) iconOff.classList.toggle("hidden", enabled);
+  }
+
+  /**
+   * Updates the screenshare toggle button icon.
+   * @param enabled - Whether screenshare is currently enabled
+   */
+  updateScreenshareButton(enabled: boolean) {
+    const iconOn = this.screenshareBtn.querySelector(".icon-on");
+    const iconOff = this.screenshareBtn.querySelector(".icon-off");
+    if (iconOn) iconOn.classList.toggle("hidden", !enabled);
+    if (iconOff) iconOff.classList.toggle("hidden", enabled);
+    this.screenshareBtn.classList.toggle("active-accent", enabled);
   }
 
   /**
