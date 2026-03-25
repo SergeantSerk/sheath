@@ -11,6 +11,7 @@ export class DeviceSelector {
   private screenshareBtn!: HTMLButtonElement;
   private remoteMuteBtn!: HTMLButtonElement;
   private remoteHideBtn!: HTMLButtonElement;
+  private remoteExpandBtn!: HTMLButtonElement;
 
   /**
    * Caches DOM element references for device controls.
@@ -24,6 +25,7 @@ export class DeviceSelector {
     this.screenshareBtn = document.getElementById("screenshareBtn") as HTMLButtonElement;
     this.remoteMuteBtn = document.getElementById("remoteMuteBtn") as HTMLButtonElement;
     this.remoteHideBtn = document.getElementById("remoteHideBtn") as HTMLButtonElement;
+    this.remoteExpandBtn = document.getElementById("remoteExpandBtn") as HTMLButtonElement;
   }
 
   /**
@@ -173,5 +175,32 @@ export class DeviceSelector {
     if (iconOn) iconOn.classList.toggle("hidden", hidden);
     if (iconOff) iconOff.classList.toggle("hidden", !hidden);
     this.remoteHideBtn.classList.toggle("active", hidden);
+  }
+
+  /**
+   * Toggles the remote expansion button visibility.
+   */
+  toggleExpandButtonVisibility(visible: boolean) {
+    this.remoteExpandBtn.classList.toggle("hidden", !visible);
+  }
+
+  /**
+   * Toggles the remote expansion state and button icon.
+   */
+  toggleRemoteExpansion(expanded: boolean) {
+    const container = document.querySelector(".video-container");
+    container?.classList.toggle("expanded-remote", expanded);
+    this.remoteExpandBtn.classList.toggle("active-accent", expanded);
+    
+    // Update icon to "Minimize" if expanded
+    if (expanded) {
+      this.remoteExpandBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
+      `;
+    } else {
+      this.remoteExpandBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+      `;
+    }
   }
 }

@@ -24,6 +24,7 @@ export class App {
   private currentVideoTrack: MediaStreamTrack | null = null;
   private currentAudioTrack: MediaStreamTrack | null = null;
   private currentScreenTrack: MediaStreamTrack | null = null;
+  private isRemoteExpanded = false;
 
   constructor() {
     const app = document.getElementById("app")!;
@@ -147,6 +148,11 @@ export class App {
       } else {
         this.acquireScreen();
       }
+    };
+
+    this.ui.onToggleExpand = () => {
+      this.isRemoteExpanded = !this.isRemoteExpanded;
+      this.ui.setRemoteExpanded(this.isRemoteExpanded);
     };
 
     this.ui.onChangeCamera = async (deviceId) => {

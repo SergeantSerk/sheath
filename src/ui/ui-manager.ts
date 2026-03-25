@@ -26,6 +26,7 @@ export class UIManager {
   public onToggleAudio?: () => void;
   public onToggleVideo?: () => void;
   public onToggleScreenshare?: () => void;
+  public onToggleExpand?: () => void;
   public onSendImage?: (image: Blob) => void;
   public onChangeCamera?: (deviceId: string) => void;
   public onChangeMicrophone?: (deviceId: string) => void;
@@ -133,6 +134,9 @@ export class UIManager {
                   <button class="btn-icon btn-sm" id="remoteHideBtn" title="Hide Remote Video">
                     <svg class="icon-on" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     <svg class="icon-off hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
+                  <button class="btn-icon btn-sm hidden" id="remoteExpandBtn" title="Expand Remote Stream">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
                   </button>
                 </div>
               </div>
@@ -326,6 +330,10 @@ export class UIManager {
       this.deviceSelector.toggleRemoteHideIcon(hidden);
     });
 
+    document.getElementById("remoteExpandBtn")?.addEventListener("click", () => {
+      this.onToggleExpand?.();
+    });
+
     // Emoji picker events
     document.getElementById("emojiBtn")?.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -414,9 +422,22 @@ export class UIManager {
   /**
    * Sets the remote video stream (peer's video).
    */
-  setRemoteStream(stream: MediaStream) {
+  setRemoteStream(stream: MediaStream | null) {
     const remoteVideo = document.getElementById("remoteVideo") as HTMLVideoElement;
     remoteVideo.srcObject = stream;
+    this.deviceSelector.toggleExpandButtonVisibility(!!stream);
+    
+    // Auto-exit expansion if stream is lost
+    if (!stream) {
+      this.setRemoteExpanded(false);
+    }
+  }
+
+  /**
+   * Toggles the remote video expansion state.
+   */
+  setRemoteExpanded(expanded: boolean) {
+    this.deviceSelector.toggleRemoteExpansion(expanded);
   }
 
   /**

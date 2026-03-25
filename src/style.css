@@ -319,6 +319,32 @@ body {
   gap: 12px;
   margin-bottom: 16px;
   flex-shrink: 0;
+  position: relative; /* Support for PiP local video */
+  transition: all 0.3s ease;
+}
+
+.video-container.expanded-remote {
+  grid-template-columns: 1fr;
+}
+
+.video-container.expanded-remote .video-wrapper.local {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 120px;
+  z-index: 20;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--accent);
+  transition: all 0.3s ease;
+}
+
+.video-container.expanded-remote .video-wrapper.local:hover {
+  width: 180px; /* Slight expansion on hover */
+}
+
+/* Hide labels in expanded mode to save space/clean look */
+.video-container.expanded-remote .video-wrapper.local .video-label {
+  display: none;
 }
 
 .video-wrapper {
