@@ -26,11 +26,24 @@ export class App {
   private currentScreenTrack: MediaStreamTrack | null = null;
   private isRemoteExpanded = false;
   private earlySignallingCandidates: RTCIceCandidateInit[] = [];
+  private autoJoinRoomCode: string | null = null;
 
   constructor() {
     const app = document.getElementById("app")!;
     this.ui = new UIManager(app);
     this.mediaManager = new MediaManager();
+
+    // Check for hardlink room code in URL query string (?room=ABC123 or ?code=ABC123)
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get("room") || params.get("code");
+    if (roomParam) {
+      const normalized = roomParam.trim().toUpperCase();
+      if (normalized.length === 6) {
+        this.autoJoinRoomCode = normalized;
+        this.ui.setJoinCode(normalized);
+      }
+    }
+
     this.setupCallbacks();
     this.setupEventHandlers();
     this.connectToSignalling();
@@ -40,6 +53,13 @@ export class App {
     this.signalling = new SignallingClient({
       onOpen: () => {
         this.ui.setStatus("idle", "Ready", "Connected to signalling server");
+        // Automatically join room if loaded via hardlink
+        if (this.autoJoinRoomCode) {
+          const code = this.autoJoinRoomCode;
+          this.autoJoinRoomCode = null;
+          this.ui.setStatus("connecting", "Joining", `Connecting to room ${code}...`);
+          this.signalling.joinRoom(code);
+        }
       },
       onClose: () => {
         this.ui.setStatus("disconnected", "Server Disconnected", "Signalling server unreachable");
@@ -51,10 +71,12 @@ export class App {
         this.isHost = true;
         this.ui.showRoomCode(code);
         this.ui.setStatus("idle", "Waiting", "Share the room code with your peer");
+        this.updateUrlWithRoomCode(code);
       },
-      onRoomJoined: (_code) => {
+      onRoomJoined: (code) => {
         this.isHost = false;
         this.ui.setStatus("connecting", "Joining", "Waiting for host to initiate connection...");
+        this.updateUrlWithRoomCode(code);
       },
       onPeerJoined: async () => {
         if (this.isHost) {
@@ -476,6 +498,19 @@ export class App {
       candidates.forEach((c) => {
         this.peer?.addIceCandidate(c);
       });
+    }
+  }
+
+  /**
+   * Updates the browser URL query parameter with the room code for easy link sharing.
+   */
+  private updateUrlWithRoomCode(code: string) {
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("room", code);
+      window.history.replaceState({}, "", url.toString());
+    } catch {
+      // Ignore if history API is restricted
     }
   }
 }

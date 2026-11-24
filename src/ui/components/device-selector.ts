@@ -36,6 +36,16 @@ export class DeviceSelector {
   }
 
   /**
+   * Sets the room code in the join input.
+   * @param code - 6-character room code
+   */
+  setJoinCode(code: string) {
+    if (this.joinInput) {
+      this.joinInput.value = code;
+    }
+  }
+
+  /**
    * Gets the selected camera device ID.
    */
   getSelectedCamera(): string {

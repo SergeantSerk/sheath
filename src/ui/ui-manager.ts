@@ -108,9 +108,22 @@ export class UIManager {
               <span class="room-label">Your Room Code</span>
               <div class="room-code-row">
                 <span class="room-code" id="roomCodeValue"></span>
-                <button class="btn-icon" id="copyCodeBtn" title="Copy code">
+                <button class="btn-icon" id="copyCodeBtn" title="Copy room code">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 </button>
+                <button class="btn-icon" id="shareRoomBtn" title="Share invite link">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                </button>
+              </div>
+              <div class="room-link-box">
+                <input 
+                  type="text" 
+                  id="roomLinkInput" 
+                  class="input room-link-input" 
+                  readonly 
+                  placeholder="Generating invite link..."
+                />
+                <button class="btn btn-secondary btn-sm" id="copyLinkBtn">Copy Link</button>
               </div>
               <span class="room-waiting">Waiting for peer to join...</span>
             </div>
@@ -143,7 +156,8 @@ export class UIManager {
             </div>
 
             <div class="media-controls">
-              <button class="btn-icon" id="muteBtn" title="Toggle Mute">
+              <div class="media-btn-group">
+                <button class="btn-icon" id="muteBtn" title="Toggle Mute">
                 <svg class="icon-on hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                 <svg class="icon-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
               </button>
@@ -155,17 +169,20 @@ export class UIManager {
                 <svg class="icon-on hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><circle cx="12" cy="10" r="3"/></svg>
                 <svg class="icon-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
               </button>
-              <div class="camera-picker">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                <select id="cameraSelect" class="select-input">
-                  <option value="">Default Camera</option>
-                </select>
               </div>
-              <div class="mic-picker">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-                <select id="micSelect" class="select-input">
-                  <option value="">Default Microphone</option>
-                </select>
+              <div class="media-pickers-row">
+                <div class="camera-picker">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                  <select id="cameraSelect" class="select-input">
+                    <option value="">Default Camera</option>
+                  </select>
+                </div>
+                <div class="mic-picker">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                  <select id="micSelect" class="select-input">
+                    <option value="">Default Microphone</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -278,8 +295,53 @@ export class UIManager {
 
     document.getElementById("copyCodeBtn")?.addEventListener("click", () => {
       const code = document.getElementById("roomCodeValue")?.textContent || "";
-      navigator.clipboard.writeText(code);
-      this.showToast("Room code copied!");
+      if (code) {
+        navigator.clipboard.writeText(code);
+        this.showToast("Room code copied!");
+      }
+    });
+
+    const getRoomInviteUrl = () => {
+      const linkInput = document.getElementById("roomLinkInput") as HTMLInputElement;
+      if (linkInput && linkInput.value) return linkInput.value;
+      const code = document.getElementById("roomCodeValue")?.textContent || "";
+      const url = new URL(window.location.href);
+      url.searchParams.set("room", code);
+      return url.toString();
+    };
+
+    document.getElementById("copyLinkBtn")?.addEventListener("click", () => {
+      const url = getRoomInviteUrl();
+      navigator.clipboard.writeText(url);
+      this.showToast("Invite link copied!");
+    });
+
+    const roomLinkInput = document.getElementById("roomLinkInput") as HTMLInputElement;
+    roomLinkInput?.addEventListener("focus", () => {
+      roomLinkInput.select();
+    });
+
+    document.getElementById("shareRoomBtn")?.addEventListener("click", async () => {
+      const url = getRoomInviteUrl();
+      const code = document.getElementById("roomCodeValue")?.textContent || "";
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: "Join Sheath Secure Chat",
+            text: `Join my private encrypted P2P chat room: ${code}`,
+            url,
+          });
+          return;
+        } catch (err: any) {
+          if (err.name !== "AbortError") {
+            navigator.clipboard.writeText(url);
+            this.showToast("Invite link copied!");
+          }
+          return;
+        }
+      }
+      navigator.clipboard.writeText(url);
+      this.showToast("Invite link copied!");
     });
 
     document.getElementById("muteBtn")?.addEventListener("click", () => {
@@ -368,11 +430,27 @@ export class UIManager {
   }
 
   /**
-   * Displays the room code after room creation.
+   * Displays the room code and generates the shareable hardlink invite.
    */
   showRoomCode(code: string) {
-    document.getElementById("roomCodeValue")!.textContent = code;
+    const codeEl = document.getElementById("roomCodeValue");
+    if (codeEl) codeEl.textContent = code;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("room", code);
+    const linkInput = document.getElementById("roomLinkInput") as HTMLInputElement;
+    if (linkInput) {
+      linkInput.value = url.toString();
+    }
+
     this.deviceSelector.showRoomCode();
+  }
+
+  /**
+   * Sets the room code in the join input field (e.g. from URL query param).
+   */
+  setJoinCode(code: string) {
+    this.deviceSelector.setJoinCode(code);
   }
 
   /**

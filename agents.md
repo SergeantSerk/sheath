@@ -95,6 +95,8 @@ sheath/
 4. **Simple Room Code** – 6‑character alphanumeric codes (excluding ambiguous characters) for room identification.  
 5. **Rate‑Limited Signalling** – HTTP endpoints are rate‑limited to mitigate abuse.  
 6. **CSP & Security Headers** – `helmet` configures a safe CSP (Content‑Security‑Policy) for the SPA.  
+7. **Hardlink Room Invites** – URLs with `?room=CODE` automatically prefill and connect on page load. Hosts can copy the full invite link or invoke the native Web Share API on mobile devices.  
+8. **Mobile-Responsive UI** – Dynamic viewport sizing (`100dvh`), iOS notch/home-bar safe area insets, touch-persistent video overlays, flexbox wrapping to prevent media control overflow, and 16px input font sizing to prevent unwanted mobile zoom.  
 
 ---
 
