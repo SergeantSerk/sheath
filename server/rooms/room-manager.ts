@@ -34,7 +34,8 @@ export class RoomManager {
    * @returns true if joined successfully, false if room not found or full
    */
   join(code: string, guest: WebSocket): boolean {
-    const room = this.rooms.get(code);
+    const normalizedCode = code.toUpperCase();
+    const room = this.rooms.get(normalizedCode);
     if (!room || room.guest) return false;
     room.guest = guest;
     return true;
@@ -81,17 +82,17 @@ export class RoomManager {
   }
 
   /**
-   * Checks if a room exists.
+   * Checks if a room exists (case-insensitive).
    */
   hasRoom(code: string): boolean {
-    return this.rooms.has(code);
+    return this.rooms.has(code.toUpperCase());
   }
 
   /**
-   * Checks if a room is full (has both host and guest).
+   * Checks if a room is full (has both host and guest, case-insensitive).
    */
   isFull(code: string): boolean {
-    const room = this.rooms.get(code);
+    const room = this.rooms.get(code.toUpperCase());
     return room ? room.guest !== null : true;
   }
 

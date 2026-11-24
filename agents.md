@@ -34,26 +34,36 @@
 sheath/
 │
 ├─ docker-compose.yml          # Orchestrates client & server containers
-├─ Dockerfile                  # Multi‑stage build for client & server
+├─ Dockerfile                  # Unified build for client & server
 ├─ index.html                  # Static HTML entry point (served by server)
 ├─ LICENSE
 ├─ package.json                # Root workspace – defines scripts & dependencies
 ├─ README.md
-├─ server.ts                   # Express + WebSocket signalling logic
+├─ server.ts                   # Entry point delegating to server/index.ts
 ├─ tsconfig.json
 ├─ vite.config.ts              # Vite config for client bundling
 │
+├─ server/                     # Signalling backend
+│  ├─ index.ts                 # Express + HTTP + WebSocket setup
+│  ├─ middleware/              # Security, rate-limiting, and static file serving
+│  ├─ rooms/                   # Room code generator and RoomManager
+│  ├─ validation/              # Zod message schemas
+│  └─ websocket/               # WebSocketHandler (heartbeat) & MessageRouter
+│
 └─ src/                        # Client source code
-   ├─ main.ts
-   ├─ peer.ts
-   ├─ signalling.ts
-   ├─ style.css
-   └─ ui.ts
+   ├─ app.ts                   # Orchestration controller
+   ├─ main.ts                  # Client entry point
+   ├─ style.css                # Responsive styles & mobile viewport rules
+   ├─ config/                  # App constants & configurable ICE servers
+   ├─ media/                   # MediaManager (camera, microphone, screenshare)
+   ├─ peer/                    # PeerManager (WebRTC) & DataChannelHandler
+   ├─ signalling/              # WebSocket SignallingClient
+   └─ ui/                      # UIManager & modular UI components
 ```
 
 - **`src/`** contains all front‑end TypeScript modules.  
-- **`server.ts`** is the entry point for the Node signalling API.  
-- **`docker-compose.yml`** defines two services: `client` and `server`.  
+- **`server/`** contains the modular Node signalling server.  
+- **`docker-compose.yml`** orchestrates the unified container deployment.  
 
 ---
 
@@ -90,13 +100,14 @@ sheath/
 
 ## 6. Signalling Flow (Step‑by‑Step)  
 
-1. **User A** opens the client UI → establishes a WebSocket connection to `ws://<server-host>:3001`.  
-2. **Room Creation** – Client sends `CREATE_ROOM` request → server generates a 6‑char code and returns it.  
-3. **User B** joins using the same code → server maps the two sockets under that code.  
-4. **Peer Discovery** – Server signals each side with the other’s SDP offer/answer and ICE candidates via WebSocket messages.  
-5. **WebRTC Connection** – Once both peers have exchanged enough ICE candidates, the `RTCPeerConnection` becomes `connected`.  
-6. **Data Transfer** – Application‑level chat messages are sent over `dataChannel.send()`.  
-7. **Close** – When either side calls `close()`, the WebSocket and DataChannel are terminated; server cleans up the room entry.  
+1. **User A** opens the client UI → establishes a WebSocket connection to the signalling server.  
+2. **Keepalive Heartbeat** – The server periodically sends WebSocket `ping` frames every 25 seconds; client responds with `pong` to prevent cellular NAT gateways from dropping idle connections.  
+3. **Room Creation** – Client sends `create-room` request → server generates a 6‑char uppercase code and registers the host.  
+4. **User B** joins using the same code (normalized to uppercase) → server maps the two sockets under that code.  
+5. **Peer Discovery** – Server signals each side with the other’s SDP offer/answer and ICE candidates via WebSocket messages. Client buffers early ICE candidates if received before peer initialization.  
+6. **WebRTC Connection** – Once both peers have exchanged ICE candidates and established connectivity, the `RTCPeerConnection` and `RTCDataChannel` enter `open` / `connected`.  
+7. **Data Transfer** – Application‑level chat messages and chunked binary blobs (with MIME type metadata) are sent over `dataChannel.send()`.  
+8. **Disconnection / Close** – When either peer disconnects, the server retrieves the peer before unregistering the socket and forwards `{ type: "peer-left" }`; client tears down WebRTC and updates UI.  
 
 *All signalling messages are JSON‑encoded and validated with **zod** schemas.*
 
@@ -223,11 +234,13 @@ services:
 
 | Symptom                                      | Likely Cause                                          | Fix                                                                                        |
 |----------------------------------------------|-------------------------------------------------------|--------------------------------------------------------------------------------------------|
-| Client cannot connect to signalling server   | Wrong `VITE_SIGNALLING_URL` or server not running     | Ensure `docker compose up` includes `server`; check `VITE_SIGNALLING_URL` env var.         |
-| WebRTC connection stays `connecting`         | ICE candidate exchange missing or blocked by firewall | Verify STUN server (`stun:stun.l.google.com:19302`) is reachable; open outbound UDP ports. |
-| Rate‑limit errors on HTTP requests           | Excessive polling or mis‑configured client            | Adjust client request frequency; increase `max` in limiter if appropriate.                 |
-| Docker build fails on TypeScript compilation | Missing `devDependencies` in production image         | Ensure `npm ci --only=production` is not stripping needed dev deps for build stage.        |
-| CSP errors in browser console                | Inline scripts or eval usage not allowed              | Move inline scripts to external files or enable `unsafe-inline` (not recommended).         |
+| Client cannot connect to signalling server   | Wrong host URL or server not running                  | Check server status and network URL; ensure WebSocket endpoint is reachable.                |
+| WebRTC connection stays `connecting` / `failed` between mobile phones | Symmetric NAT / CGNAT on cellular or IPv4/IPv6 mismatch | Two phones on cellular networks require a TURN relay server (configure via `SHEATH_ICE_SERVERS`). |
+| Mobile $\leftrightarrow$ PC connects but Mobile $\leftrightarrow$ Mobile fails | Asymmetric NAT hole punching works only with Cone NAT | Mobile devices behind Symmetric NATs cannot hole-punch directly; deploy a TURN relay server. |
+| ICE candidates dropped on guest side         | Candidates arrived before offer processed             | Candidates are automatically buffered in `App` until `PeerManager` is ready.                 |
+| Silent WebSocket disconnection on mobile     | Carrier NAT timeout on idle TCP socket                | Resolved via 25-second WebSocket ping/pong keepalive.                                       |
+| iOS Safari zooms in on text input            | Input font size < 16px                                | Resolved by setting `.input` font-size to `1rem` (16px).                                     |
+| Images fail to display on iOS Safari         | Data channel binary received as `ArrayBuffer`         | `DataChannelHandler` supports both `Blob` and `ArrayBuffer` with MIME type reassembly.      |
 
 ---
 

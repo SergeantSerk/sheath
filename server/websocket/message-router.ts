@@ -61,9 +61,10 @@ export class MessageRouter {
 
   /**
    * Handles room creation request.
-   * Generates a unique code and registers the host.
+   * Cleans up any existing room the socket belongs to, generates a unique code, and registers the host.
    */
   private handleCreateRoom(host: WebSocket) {
+    this.handleDisconnection(host);
     const code = this.roomManager.create(host);
     this.send(host, { type: "room-created", code });
   }
@@ -73,16 +74,18 @@ export class MessageRouter {
    * Validates room exists and is not full before adding guest.
    */
   private handleJoinRoom(guest: WebSocket, code: string) {
-    if (!this.roomManager.hasRoom(code)) {
+    const normalizedCode = code.toUpperCase();
+    if (!this.roomManager.hasRoom(normalizedCode)) {
       this.sendError(guest, "Room not found");
       return;
     }
-    if (this.roomManager.isFull(code)) {
+    if (this.roomManager.isFull(normalizedCode)) {
       this.sendError(guest, "Room is full");
       return;
     }
-    this.roomManager.join(code, guest);
-    this.send(guest, { type: "room-joined", code });
+    this.handleDisconnection(guest);
+    this.roomManager.join(normalizedCode, guest);
+    this.send(guest, { type: "room-joined", code: normalizedCode });
     const host = this.roomManager.getPeer(guest);
     if (host) {
       this.send(host, { type: "peer-joined" });
@@ -112,14 +115,16 @@ export class MessageRouter {
   /**
    * Handles WebSocket disconnection.
    * Notifies peer and cleans up room if empty.
+   * Looks up the peer BEFORE removing the socket so the notification can be delivered.
    * @returns Room code and whether peer was notified, or null
    */
   handleDisconnection(ws: WebSocket): { code: string; peerLeft: boolean } | null {
+    // Crucial: get the peer BEFORE removing ws from the room, otherwise getPeer returns null!
+    const peer = this.roomManager.getPeer(ws);
     const result = this.roomManager.remove(ws);
     if (!result) return null;
 
     const { code, wasFull } = result;
-    const peer = this.roomManager.getPeer(ws);
     if (peer && peer.readyState === WebSocket.OPEN) {
       this.send(peer, { type: "peer-left" });
     }

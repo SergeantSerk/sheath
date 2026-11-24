@@ -40,7 +40,6 @@ export class PeerManager {
     this.callbacks = callbacks;
     this.pc = new RTCPeerConnection({
       iceServers: ICE_SERVERS,
-      iceCandidatePoolSize: 2,      // Pre-generate ICE candidates
       bundlePolicy: "max-bundle",  // Bundle all tracks together
       rtcpMuxPolicy: "require",    // Require RTCP multiplexing
       iceTransportPolicy: "all",   // Use all available interfaces
@@ -75,13 +74,15 @@ export class PeerManager {
   }
 
   /**
-   * Sets up the data channel with message handling.
+   * Sets up the data channel with message handling and lifecycle callbacks.
+   * Note: onDataChannelOpen is triggered only when the channel actually transitions to "open".
    */
   private setupDataChannel(channel: RTCDataChannel) {
     this.dcHandler = new DataChannelHandler(channel, {
       onMessage: (message) => this.callbacks.onMessage?.(message),
+      onOpen: () => this.callbacks.onDataChannelOpen?.(),
+      onClose: () => this.callbacks.onDataChannelClose?.(),
     });
-    this.callbacks.onDataChannelOpen?.();
   }
 
   /**
@@ -97,6 +98,15 @@ export class PeerManager {
     }
 
     const offer = await this.pc.createOffer();
+    await this.pc.setLocalDescription(offer);
+    return offer;
+  }
+
+  /**
+   * Triggers an ICE restart to recover from network changes (e.g. Wi-Fi to cellular).
+   */
+  async restartIce(): Promise<RTCSessionDescriptionInit> {
+    const offer = await this.pc.createOffer({ iceRestart: true });
     await this.pc.setLocalDescription(offer);
     return offer;
   }
@@ -128,10 +138,19 @@ export class PeerManager {
   /**
    * Adds an ICE candidate from the peer.
    * Buffers candidates until remote description is set.
+   * Safely ignores malformed/empty candidates and prevents uncaught promise rejections.
    */
   async addIceCandidate(candidate: RTCIceCandidateInit) {
+    if (!candidate || (!candidate.candidate && candidate.candidate !== "")) {
+      return;
+    }
+
     if (this.remoteDescSet) {
-      await this.pc.addIceCandidate(new RTCIceCandidate(candidate));
+      try {
+        await this.pc.addIceCandidate(candidate);
+      } catch (err) {
+        console.warn("[PeerManager] Failed to add ICE candidate:", err);
+      }
     } else {
       this.pendingCandidates.push(candidate);
     }
@@ -139,12 +158,18 @@ export class PeerManager {
 
   /**
    * Flushes buffered ICE candidates after remote description is set.
+   * Copies array to prevent re-entrancy issues and catches individual candidate errors.
    */
   private async flushCandidates() {
-    for (const c of this.pendingCandidates) {
-      await this.pc.addIceCandidate(new RTCIceCandidate(c));
-    }
+    const candidates = [...this.pendingCandidates];
     this.pendingCandidates = [];
+    for (const c of candidates) {
+      try {
+        await this.pc.addIceCandidate(c);
+      } catch (err) {
+        console.warn("[PeerManager] Failed to flush ICE candidate:", err);
+      }
+    }
   }
 
   /**

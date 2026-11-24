@@ -1,14 +1,39 @@
 /**
- * ICE (Interactive Connectivity Establishment) servers.
- * Used by WebRTC to discover network paths between peers.
+ * Extend Window interface for optional runtime ICE server configuration.
+ */
+declare global {
+  interface Window {
+    SHEATH_ICE_SERVERS?: RTCIceServer[];
+  }
+}
+
+/**
+ * Default public STUN servers for network discovery.
  * Multiple STUN servers provide redundancy.
  */
-export const ICE_SERVERS: RTCIceServer[] = [
+export const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
   { urls: "stun:stun.cloudflare.com:3478" },
   { urls: "stun:stun.stunprotocol.org:3478" },
 ];
+
+/**
+ * Returns configured ICE servers, checking window.SHEATH_ICE_SERVERS first
+ * to allow external TURN/STUN server injection without rebuilding.
+ */
+export function getIceServers(): RTCIceServer[] {
+  if (typeof window !== "undefined" && window.SHEATH_ICE_SERVERS && Array.isArray(window.SHEATH_ICE_SERVERS)) {
+    return window.SHEATH_ICE_SERVERS;
+  }
+  return DEFAULT_ICE_SERVERS;
+}
+
+/**
+ * ICE (Interactive Connectivity Establishment) servers.
+ * Used by WebRTC to discover network paths between peers.
+ */
+export const ICE_SERVERS: RTCIceServer[] = getIceServers();
 
 /**
  * Chunk size for file transfers over WebRTC data channels.
@@ -41,7 +66,9 @@ export const STATUS_COLORS: Record<string, string> = {
  */
 export type FileHeader = {
   type: "file-header";
-  chunks: number;  // Total number of chunks
-  size: number;    // Total file size in bytes
+  chunks: number;     // Total number of chunks
+  size: number;       // Total file size in bytes
+  mimeType?: string;  // MIME type (e.g. image/jpeg, image/png)
+  name?: string;      // Optional file name
 };
 

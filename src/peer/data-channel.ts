@@ -1,25 +1,34 @@
 import { CHUNK_SIZE, MAX_BUFFERED_AMOUNT, FileHeader } from "../config/constants";
 
 /**
+ * Callbacks for data channel lifecycle and message events.
+ */
+export type DataChannelCallbacks = {
+  onMessage: (message: string | Blob) => void;
+  onOpen?: () => void;
+  onClose?: () => void;
+};
+
+/**
  * Handles WebRTC data channel operations.
  * - Text message sending/receiving
- * - File chunking and reassembly
+ * - File chunking and reassembly (supports both Blob and ArrayBuffer for Safari/WebKit)
+ * - Lifecycle tracking (onopen/onclose events)
  * - Flow control via buffered amount monitoring
  */
 export class DataChannelHandler {
   private dc: RTCDataChannel;
-  private callbacks: {
-    onMessage: (message: string | Blob) => void;
-  };
-  private incomingChunks: Blob[] = [];
+  private callbacks: DataChannelCallbacks;
+  private incomingChunks: (Blob | ArrayBuffer)[] = [];
   private expectedChunks = 0;
+  private currentMimeType = "image/png";
 
   /**
    * Creates a new DataChannelHandler.
    * @param dc - The RTCDataChannel to wrap
-   * @param callbacks - Callback for received messages
+   * @param callbacks - Callbacks for message and lifecycle events
    */
-  constructor(dc: RTCDataChannel, callbacks: { onMessage: (message: string | Blob) => void }) {
+  constructor(dc: RTCDataChannel, callbacks: DataChannelCallbacks) {
     this.dc = dc;
     this.callbacks = callbacks;
     this.setupChannel();
@@ -27,20 +36,25 @@ export class DataChannelHandler {
 
   /**
    * Sets up data channel event handlers.
-   * - onopen: Connection established
+   * - onopen: Connection established (ready to send)
    * - onclose: Connection closed
-   * - onmessage: Handles both text and binary (chunked file) data
+   * - onmessage: Handles both text and binary (chunked file) data across all browsers
    */
   private setupChannel() {
     this.dc.binaryType = "blob";
 
     this.dc.onopen = () => {
-      // Connection established - ready to send
+      this.callbacks.onOpen?.();
     };
 
     this.dc.onclose = () => {
-      // Connection closed - cleanup if needed
+      this.callbacks.onClose?.();
     };
+
+    // If channel is already open when wrapped, notify callback
+    if (this.dc.readyState === "open") {
+      queueMicrotask(() => this.callbacks.onOpen?.());
+    }
 
     this.dc.onmessage = async (event) => {
       const data = event.data;
@@ -49,23 +63,24 @@ export class DataChannelHandler {
         // Text message or file header
         try {
           const parsed = JSON.parse(data);
-          if (parsed.type === "file-header") {
+          if (parsed && parsed.type === "file-header") {
             // Start receiving file chunks
             const header = parsed as FileHeader;
             this.incomingChunks = [];
             this.expectedChunks = header.chunks;
+            this.currentMimeType = header.mimeType || "image/png";
             return;
           }
         } catch {
           // Not JSON, treat as plain text
         }
         this.callbacks.onMessage(data);
-      } else if (data instanceof Blob) {
-        // File chunk - reassemble when complete
+      } else if (data instanceof Blob || data instanceof ArrayBuffer) {
+        // File chunk - supports both Blob and ArrayBuffer (crucial for iOS Safari / WebKit)
         if (this.expectedChunks > 0) {
           this.incomingChunks.push(data);
           if (this.incomingChunks.length === this.expectedChunks) {
-            const fullBlob = new Blob(this.incomingChunks);
+            const fullBlob = new Blob(this.incomingChunks, { type: this.currentMimeType });
             this.callbacks.onMessage(fullBlob);
             this.incomingChunks = [];
             this.expectedChunks = 0;
@@ -91,7 +106,7 @@ export class DataChannelHandler {
 
   /**
    * Sends a large blob in chunks with flow control.
-   * 1. Send file header with metadata
+   * 1. Send file header with metadata (size, chunks, mimeType)
    * 2. Send chunks, waiting if buffer is full
    */
   private async sendBlobInChunks(blob: Blob) {
@@ -100,6 +115,7 @@ export class DataChannelHandler {
       type: "file-header",
       chunks: numChunks,
       size: blob.size,
+      mimeType: blob.type || "image/png",
     };
 
     // Send metadata first

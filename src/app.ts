@@ -25,6 +25,7 @@ export class App {
   private currentAudioTrack: MediaStreamTrack | null = null;
   private currentScreenTrack: MediaStreamTrack | null = null;
   private isRemoteExpanded = false;
+  private earlySignallingCandidates: RTCIceCandidateInit[] = [];
 
   constructor() {
     const app = document.getElementById("app")!;
@@ -69,17 +70,17 @@ export class App {
         this.ui.setStatus("connecting", "Negotiating", "Handling incoming offer...");
         const answer = await this.peer!.handleOffer(sdp);
         this.signalling.sendAnswer(answer);
-
-        if (this.peer?.connectionState === "connected") {
-          this.ui.setStatus("connected", "Connected", "Connection updated");
-        }
       },
       onAnswer: async (sdp) => {
-        this.ui.setStatus("connected", "Connected", "Connection updated");
         await this.peer!.handleAnswer(sdp);
       },
       onIceCandidate: async (candidate) => {
-        await this.peer?.addIceCandidate(candidate);
+        if (this.peer) {
+          await this.peer.addIceCandidate(candidate);
+        } else {
+          // Buffer early candidates received before peer was initialized (crucial for mobile networks)
+          this.earlySignallingCandidates.push(candidate);
+        }
       },
       onTypingStart: () => {
         this.ui.showPeerTyping();
@@ -94,6 +95,7 @@ export class App {
         this.stopStatsPolling();
         this.peer?.destroy();
         this.peer = null;
+        this.earlySignallingCandidates = [];
         this.ui.notifyPeerLeft();
       },
     });
@@ -422,7 +424,16 @@ export class App {
           case "failed":
             this.ui.setStatus("failed", "Connection Failed", "Could not establish P2P link");
             this.ui.disableChat();
-            this.ui.addMessage("Connection failed. Please refresh and try again.", "system");
+            if (this.isHost && this.peer) {
+              this.ui.addMessage("Connection failed. Attempting ICE restart...", "system");
+              this.peer.restartIce().then((offer) => {
+                this.signalling.sendOffer(offer);
+              }).catch(() => {
+                this.ui.addMessage("Connection failed. Please refresh and try again.", "system");
+              });
+            } else {
+              this.ui.addMessage("Connection failed. Please refresh and try again.", "system");
+            }
             this.stopStatsPolling();
             break;
           case "connecting":
@@ -455,6 +466,15 @@ export class App {
     if (this.localStream) {
       this.localStream.getTracks().forEach((track) => {
         this.peer?.addTrack(track, this.localStream!);
+      });
+    }
+
+    // Flush any early candidates received before peer initialization
+    if (this.earlySignallingCandidates.length > 0) {
+      const candidates = [...this.earlySignallingCandidates];
+      this.earlySignallingCandidates = [];
+      candidates.forEach((c) => {
+        this.peer?.addIceCandidate(c);
       });
     }
   }
